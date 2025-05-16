@@ -1,23 +1,54 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/components/ui/button";
+import { Input } from "@/components/components/ui/input";
+import { Label } from "@/components/components/ui/label";
+import { Checkbox } from "@/components/components/ui/checkbox";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/components/ui/card";
 import { GitHubLogoIcon } from "@radix-ui/react-icons";
 import { FiMail } from "react-icons/fi";
 import { FcGoogle } from "react-icons/fc";
 import { toast } from "sonner";
+import { AlertCircle } from "lucide-react";
 
 export default function SignIn() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+
+  // Check for auth errors in URL
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      // Extract error message from URL hash
+      const hash = window.location.hash;
+      if (hash.includes("error=")) {
+        const errorParams = new URLSearchParams(hash.substring(1));
+        const errorType = errorParams.get("error");
+        const errorDescription = errorParams.get("error_description")?.replace(/\+/g, " ");
+        
+        if (errorDescription) {
+          setAuthError(errorDescription);
+          
+          // Show appropriate toast based on error type
+          if (errorType === "no_code") {
+            toast.error("Authentication link is missing required information. Please try signing in again.");
+          } else if (errorType === "otp_expired") {
+            toast.error("The magic link has expired. Please request a new one.");
+          } else {
+            toast.error(errorDescription);
+          }
+          
+          // Clean the URL by removing the hash
+          window.history.replaceState(null, "", window.location.pathname);
+        }
+      }
+    }
+  }, []);
 
   // Determine session expiration based on "Remember me" selection
   const getExpiryOptions = () => {
@@ -31,22 +62,27 @@ export default function SignIn() {
   const handleSignInWithEmail = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    console.log("Attempting to sign in with email:", email);
 
     try {
+      console.log("Calling Supabase signInWithOtp...");
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: `http://localhost:3004/auth/callback`,
           ...getExpiryOptions()
         }
       });
 
       if (error) {
+        console.error("Supabase auth error:", error);
         throw error;
       }
 
+      console.log("Sign in with OTP successful, toast notification should appear");
       toast.success("Check your email for the login link!");
     } catch (error: any) {
+      console.error("Sign in error:", error);
       toast.error(error.message || "An error occurred during sign in");
     } finally {
       setIsLoading(false);
@@ -60,7 +96,7 @@ export default function SignIn() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "github",
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: `http://localhost:3004/auth/callback`,
           ...getExpiryOptions()
         }
       });
@@ -81,7 +117,7 @@ export default function SignIn() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: `http://localhost:3004/auth/callback`,
           ...getExpiryOptions()
         }
       });
@@ -105,6 +141,23 @@ export default function SignIn() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {authError && (
+            <div className="bg-red-50 border border-red-200 rounded-md p-4 text-sm text-red-600">
+              <div className="flex items-start mb-2">
+                <AlertCircle className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0" />
+                <div className="font-semibold">{authError}</div>
+              </div>
+              <div className="pl-6">
+                <p className="mt-1">Please try the following:</p>
+                <ul className="list-disc pl-5 mt-1 space-y-1">
+                  <li>Enter your email below and request a new magic link</li>
+                  <li>Make sure to use the link within 60 minutes</li>
+                  <li>Check your spam folder if you don't see the email</li>
+                </ul>
+              </div>
+            </div>
+          )}
+          
           <div className="space-y-2">
             <Button
               variant="outline"
@@ -166,8 +219,17 @@ export default function SignIn() {
               className="w-full gap-2"
               disabled={isLoading}
             >
-              <FiMail className="h-5 w-5" />
-              <span>Sign in with Email</span>
+              {isLoading ? (
+                <>
+                  <span className="h-5 w-5 animate-spin rounded-full border-2 border-dotted border-current" />
+                  <span>Sending...</span>
+                </>
+              ) : (
+                <>
+                  <FiMail className="h-5 w-5" />
+                  <span>Sign in with Email</span>
+                </>
+              )}
             </Button>
           </form>
         </CardContent>

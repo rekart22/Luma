@@ -1,7 +1,7 @@
 # Luma Therapy Chat - Feature Roadmap
 
 ## Feature #1: Auth Gateway
-**Status**: Complete
+**Status**: In Progress
 **Dependencies**: None
 **Owner**: Dev Team
 
@@ -18,6 +18,10 @@
 - Implemented automatic profile creation on first sign-in
 - Added Row Level Security to database tables
 - Session duration: 24 hours (default) or 30 days (remember me)
+- Currently experiencing issues with email magic link authentication:
+  - Clicking links from emails results in "No authorization code provided" error
+  - The issue appears to be related to port mismatches (3000 vs 3004) in redirect URLs
+  - Environment variable loading inconsistencies between client and server components
 
 ### Testing Strategy
 - Test OAuth flows with Google and GitHub
@@ -25,6 +29,12 @@
 - Check session persistence across browser restarts
 - Validate redirection to protected routes
 - Verify profile creation and data retrieval
+
+### Next Steps
+- Fix port configuration to ensure consistent URLs throughout the application
+- Ensure Supabase environment variables are properly loaded
+- Modify callback route to better handle authentication codes
+- Add more robust error handling in the auth flow
 
 ## Feature #2: Text Chat UI
 **Status**: Planning
@@ -116,7 +126,7 @@
 
 ## Auth gateway (Roadmap #1)
 
-**Status**: Planning
+**Status**: In Progress
 **Dependencies**: UI Migration & Project Setup
 **Owner**: [Unassigned]
 
@@ -129,10 +139,12 @@
 - Use Supabase OAuth for authentication
 - Integrate with Next.js App Router
 - Ensure SSR compatibility and secure session handling
+- **Current Issues**:
+  - Email magic link authentication fails with "No authorization code provided" error
+  - Port mismatch between URLs (3000 vs 3004) causing callback issues
+  - Environment variables not consistently loaded across the application
 
 ### Testing Strategy
 - Test login with Google and GitHub
 - Verify session persistence and logout
-- Check error handling for failed logins
-
---- 
+- Check error handling for failed logins 

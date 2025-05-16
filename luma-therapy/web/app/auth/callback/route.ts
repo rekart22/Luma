@@ -6,40 +6,95 @@ import type { Database } from '@/lib/database.types'
 
 export const dynamic = 'force-dynamic'
 
+// Constants for consistent URL use
+const BASE_URL = 'http://localhost:3004';
+const SIGNIN_URL = `${BASE_URL}/auth/signin`;
+const DASHBOARD_URL = `${BASE_URL}/dashboard`;
+
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
+  console.log('Auth callback triggered. URL:', requestUrl.toString())
+  console.log('Query parameters:', Object.fromEntries(requestUrl.searchParams.entries()))
+  
   const code = requestUrl.searchParams.get('code')
   
-  if (code) {
-    const supabase = createRouteHandlerClient<Database>({ cookies })
-    
-    // Exchange the code for a session
-    await supabase.auth.exchangeCodeForSession(code)
-    
-    // Create/update the user profile if needed - using MCP
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    
-    if (user) {
-      // Check if user profile exists using MCP
-      const { data: existingProfile, error: profileError } = await supabase
-        .from('profiles')
-        .select()
-        .eq('user_id', user.id)
-        .single()
-      
-      if (!existingProfile && !profileError) {
-        // Create new profile using MCP
-        await supabase.from('profiles').insert({
-          user_id: user.id,
-          display_name: user.user_metadata.full_name || user.email?.split('@')[0],
-          avatar_url: user.user_metadata.avatar_url,
-        })
-      }
-    }
+  // Handle cases where the code is missing but there's a fragment or hash
+  const hasFragment = requestUrl.hash && requestUrl.hash.length > 0
+  if (hasFragment) {
+    console.log('URL has fragment:', requestUrl.hash)
   }
   
-  // Redirect to the dashboard
-  return NextResponse.redirect(new URL('/dashboard', request.url))
+  // If there's no code, redirect to sign-in with an error
+  if (!code) {
+    console.error('No auth code provided in the request')
+    return NextResponse.redirect(
+      new URL(`${SIGNIN_URL}#error=no_code&error_description=No authorization code provided. Please try signing in again.`)
+    )
+  }
+  
+  try {
+    const cookieStore = cookies()
+    const supabase = createRouteHandlerClient<Database>({ cookies: () => cookieStore })
+    
+    console.log('Exchanging code for session...')
+    // Exchange the code for a session
+    const { error: sessionError } = await supabase.auth.exchangeCodeForSession(code)
+    
+    if (sessionError) {
+      console.error('Session error:', sessionError)
+      return NextResponse.redirect(
+        new URL(`${SIGNIN_URL}#error=${sessionError.name}&error_description=${encodeURIComponent(sessionError.message)}`)
+      )
+    }
+    
+    console.log('Session created successfully, getting user details...')
+    // Get the user details
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    
+    if (userError || !user) {
+      console.error('User error:', userError)
+      return NextResponse.redirect(
+        new URL(`${SIGNIN_URL}#error=user_fetch_failed&error_description=Failed to get user details`)
+      )
+    }
+    
+    console.log('User authenticated successfully:', user.email)
+    
+    // Create/update user profile if needed
+    console.log('Checking for existing profile...')
+    const { data: existingProfile, error: profileFetchError } = await supabase
+      .from('profiles')
+      .select()
+      .eq('user_id', user.id)
+      .single()
+    
+    if (profileFetchError && profileFetchError.code !== 'PGRST116') {
+      console.error('Error fetching profile:', profileFetchError)
+    }
+    
+    if (!existingProfile) {
+      console.log('Creating new user profile...')
+      const { error: profileCreateError } = await supabase.from('profiles').insert({
+        user_id: user.id,
+        display_name: user.user_metadata.full_name || user.email?.split('@')[0] || 'User',
+        avatar_url: user.user_metadata.avatar_url,
+      })
+      
+      if (profileCreateError) {
+        console.error('Profile creation error:', profileCreateError)
+        // Continue anyway, as this isn't critical for auth
+      }
+    } else {
+      console.log('User profile already exists')
+    }
+    
+    // Redirect to the dashboard on success
+    console.log('Authentication complete, redirecting to dashboard')
+    return NextResponse.redirect(new URL(DASHBOARD_URL))
+  } catch (error) {
+    console.error('Callback error:', error)
+    return NextResponse.redirect(
+      new URL(`${SIGNIN_URL}#error=callback_error&error_description=An unexpected error occurred during authentication. Please try again.`)
+    )
+  }
 } 

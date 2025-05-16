@@ -93,3 +93,18 @@ Cursor's inline GPT will be used to generate boilerplate code for each feature, 
 - Efficient embedding storage and retrieval
 - Strategic rate limiting to prevent abuse
 - Optimized context window management
+
+# Colors
+Blush & Clay
+Mood: Feminine warmth, comfort, earthiness
+Very grounded but nurturing.
+
+Background: #FFFAF9 – warm blush white
+
+Primary accent: #E9BBAE – muted peach clay
+
+Secondary accent: #CFA18D – terracotta skin tone
+
+Highlight: #FCE6DF – soft coral glow
+
+Typography: #3F3F3F – warm gray-brown
