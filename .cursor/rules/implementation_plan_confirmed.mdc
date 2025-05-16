@@ -1,0 +1,9 @@
+---
+description: Use this rule each time when you generate new code for new feature or if you make any changes to code or project structure
+globs: 
+alwaysApply: false
+---
+
+# Your rule content
+
+Maintain @documentation.md after each changes in code or project structure. 

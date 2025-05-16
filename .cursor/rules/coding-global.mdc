@@ -1,0 +1,13 @@
+---
+description: Use this rule each time when you generate new code
+globs: 
+alwaysApply: true
+---
+
+# Your rule content
+
+1. Prioritize **clean, efficient, and readable** code.
+2. Follow **language-specific best practices** and maintain **consistent formatting**.
+3. Implement **security best practices**.
+4. Never overwrite entire files unless **necessary**.
+5. Write **self-documenting code** with clear comments.
