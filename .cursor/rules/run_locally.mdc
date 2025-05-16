@@ -3,10 +3,12 @@ description:
 globs: 
 alwaysApply: false
 ---
+--MCP brwoser
+npx @agentdeskai/browser-tools-server
 
 
 
-uvicorn main:app --host 127.0.0.1 --port 8000 --reload
 
+cd luma-therapy/web
 
-# cd "/d/Flo/AI/Pharma naming tool/NamingTool"
+npm run dev -- --port 3004
