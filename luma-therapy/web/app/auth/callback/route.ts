@@ -16,21 +16,21 @@ export async function GET(request: NextRequest) {
     // Exchange the code for a session
     await supabase.auth.exchangeCodeForSession(code)
     
-    // Create/update the user profile if needed
+    // Create/update the user profile if needed - using MCP
     const {
       data: { user },
     } = await supabase.auth.getUser()
     
     if (user) {
-      // Check if user profile exists
-      const { data: existingProfile } = await supabase
+      // Check if user profile exists using MCP
+      const { data: existingProfile, error: profileError } = await supabase
         .from('profiles')
         .select()
         .eq('user_id', user.id)
         .single()
       
-      if (!existingProfile) {
-        // Create new profile
+      if (!existingProfile && !profileError) {
+        // Create new profile using MCP
         await supabase.from('profiles').insert({
           user_id: user.id,
           display_name: user.user_metadata.full_name || user.email?.split('@')[0],

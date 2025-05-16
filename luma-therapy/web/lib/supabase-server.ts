@@ -1,33 +1,49 @@
-import { createServerClient } from '@supabase/auth-helpers-nextjs';
+import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
-import { Database } from './database.types';
 
+// Define types locally if database.types doesn't exist yet
+type Database = {
+  public: {
+    Tables: {
+      profiles: {
+        Row: {
+          id: string;
+          user_id: string;
+          display_name: string | null;
+          avatar_url: string | null;
+          created_at: string;
+          updated_at: string;
+          role?: string | null;
+        };
+      };
+      // Other tables as needed
+    };
+  };
+};
+
+// Public client for authenticated user operations
 export const createClient = () => {
-  const cookieStore = cookies();
+  return createServerComponentClient<Database>({
+    cookies
+  });
+};
+
+// Secure admin client for privileged operations - only available server-side
+export const createAdminClient = () => {
+  // IMPORTANT: Only use this on server-side functions like API routes
+  // Never expose the service_role key to the client
   
-  return createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  // This uses the direct supabase-js client instead of the auth-helpers client
+  // because we need to use the service role key
+  return createSupabaseClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+    process.env.SUPABASE_API_KEY || '',
     {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
-        },
-        set(name: string, value: string, options: any) {
-          try {
-            cookieStore.set({ name, value, ...options });
-          } catch (error) {
-            // Handle cookie errors in development
-          }
-        },
-        remove(name: string, options: any) {
-          try {
-            cookieStore.set({ name, value: '', ...options });
-          } catch (error) {
-            // Handle cookie errors in development
-          }
-        },
-      },
+      auth: {
+        autoRefreshToken: true,
+        persistSession: false
+      }
     }
   );
 }; 

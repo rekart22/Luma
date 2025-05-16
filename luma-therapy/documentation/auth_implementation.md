@@ -1,109 +1,85 @@
-# Authentication Implementation - Feature #1
+# Authentication Implementation with Supabase MCP - Feature #1
 
-## Overview
+## What You Need to Do
 
-This document details the implementation of the authentication system for Luma Therapy Chat, focusing on Google OAuth, GitHub OAuth, and email magic link authentication with "Remember me" functionality.
+This document outlines the remaining steps needed to complete the authentication implementation for Luma Therapy Chat using Supabase MCP.
 
-## Key Components
+### 1. Configure Supabase Project
 
-### 1. Supabase Integration
+Your Supabase project "Luma-therapist" has been set up, and the profiles table has been created. You need to:
 
-- **Client-Side Integration**: `@supabase/supabase-js` for browser interactions
-  - File: `lib/supabase.ts`
-  - Purpose: Handles client-side authentication flows (OAuth redirects, magic links)
+- [ ] Enable Google OAuth in the Supabase dashboard (Authentication → Providers → Google)
+  - Create OAuth credentials in Google Cloud Console ([Instructions](https://supabase.com/docs/guides/auth/social-login/auth-google))
+  - Add your Google Client ID and Secret to the Supabase dashboard
 
-- **Server-Side Integration**: `@supabase/auth-helpers-nextjs` for secure server operations
-  - File: `lib/supabase-server.ts`
-  - Purpose: Server-side session validation and secure data fetching
+- [ ] Enable GitHub OAuth in the Supabase dashboard (Authentication → Providers → GitHub)
+  - Create OAuth App in GitHub Developer Settings ([Instructions](https://supabase.com/docs/guides/auth/social-login/auth-github))
+  - Add your GitHub Client ID and Secret to the Supabase dashboard
 
-### 2. Authentication Routes
+- [ ] Configure allowed callback URLs for both providers:
+  ```
+  https://qwtcgfmfxqjbkmbkymdr.supabase.co/auth/v1/callback
+  ```
 
-- **Sign-In Page**: User-facing authentication interface
-  - File: `app/auth/signin/page.tsx`
-  - Features:
-    - Google OAuth button
-    - GitHub OAuth button
-    - Email magic link form
-    - "Remember me" checkbox (30-day session vs 24-hour default)
+### 2. Set Environment Variables
 
-- **OAuth Callback Handler**: Processes OAuth provider redirects
-  - File: `app/auth/callback/route.ts`
-  - Actions:
-    - Exchanges temporary code for session
-    - Creates/updates user profile
-    - Redirects to dashboard
+The setup script has been created to securely transfer your API keys to the application:
 
-- **Sign-Out Handler**: Terminates user sessions
-  - File: `app/auth/signout/route.ts`
-  - Actions:
-    - Invalidates current session
-    - Redirects to home page
+- [ ] Create a `.env` file in the project root (Luma/Luma) with your service role key:
+  ```
+  SUPABASE_API_KEY=your-actual-service-role-key
+  ```
+  (Find this in Supabase dashboard → Project Settings → API)
 
-### 3. Route Protection & Middleware
+- [ ] Run the setup script to generate your `.env.local` file:
+  ```
+  cd luma-therapy/web
+  node setup-env.js
+  ```
 
-- **Auth Middleware**: Guards protected routes
-  - File: `middleware.ts`
-  - Functions:
-    - Validates session on protected routes
-    - Redirects unauthenticated users to login
-    - Refreshes expired tokens automatically
-    - Redirects authenticated users away from auth pages
+- [ ] For production, add these environment variables to your Vercel project:
+  - `NEXT_PUBLIC_SUPABASE_URL`
+  - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+  - `SUPABASE_API_KEY` (as a secret environment variable)
 
-### 4. Database Schema
+### 3. Test Authentication Flow
 
-```sql
--- profiles table
-CREATE TABLE IF NOT EXISTS public.profiles (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES auth.users(id) NOT NULL,
-  display_name TEXT,
-  avatar_url TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL
-);
-```
+- [ ] Start the development server:
+  ```
+  npm run dev
+  ```
 
-- User authentication data is stored in Supabase's built-in `auth.users` table
-- Profile data is stored in a custom `profiles` table with RLS policies
-- User-message relationships are established through the `user_id` foreign key
+- [ ] Navigate to `/auth/signin` to test each authentication method:
+  - Google OAuth
+  - GitHub OAuth
+  - Email magic link
 
-### 5. Security Measures
+- [ ] Verify you're redirected to the dashboard after successful authentication
 
-- **Row Level Security**: Ensures users can only access their own data
-- **CSRF Protection**: Managed by Next.js and Supabase Auth Helpers
-- **Secure Cookies**: HTTP-only, secure cookies for session management 
-- **Token Refresh**: Automatic token rotation for extended sessions
-- **Rate Limiting**: Implemented at the middleware level
+- [ ] Test protected routes to ensure middleware is working correctly
 
-## Session Management
+### 4. Admin Functionality (Optional)
 
-1. **Default Sessions**: 24-hour duration
-2. **Remembered Sessions**: 30-day duration when "Remember me" is selected
-3. **Session Storage**: HTTP-only cookies (not accessible via JavaScript)
-4. **Token Refresh**: Automatic refresh of expired tokens via middleware
+If you need admin functionality, you'll need to:
 
-## Authentication Flow
+- [ ] Add a `role` column to the profiles table:
+  ```sql
+  ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS role TEXT;
+  ```
 
-1. User navigates to `/auth/signin`
-2. User selects authentication method:
-   - Google/GitHub → OAuth flow → provider site → callback
-   - Email → Enter email → Receive magic link → Click link → callback
-3. Callback route exchanges temporary code for session
-4. Profile is created/updated in database
-5. User is redirected to dashboard
-6. Protected routes are now accessible until session expires
+- [ ] Set admin role for your user:
+  ```sql
+  UPDATE public.profiles SET role = 'admin' WHERE user_id = 'your-user-id';
+  ```
 
-## Implementation Decisions
+- [ ] Test admin routes at `/api/admin/users` when logged in as admin user
 
-1. **Multiple Auth Methods**: Providing different options increases accessibility
-2. **Magic Links vs Passwords**: Password-less auth improves security
-3. **Server Components**: Using Next.js RSC for secure data fetching
-4. **Middleware Approach**: Route protection at the Edge for performance
-5. **Profile Creation**: Automatic profile creation for streamlined onboarding
+## Security Best Practices
 
-## Future Enhancements
+Please review the security documentation at `documentation/security-best-practices.md` for details on how API keys are managed securely.
 
-1. **Multi-factor Authentication**: Add additional security layer
-2. **Session Management UI**: Allow users to view and manage active sessions
-3. **Account Linking**: Connect multiple providers to the same account
-4. **Enhanced Rate Limiting**: More sophisticated rate limiting and abuse prevention 
+Key points:
+- Never expose the `SUPABASE_API_KEY` to client-side code
+- Use `createClient()` for authenticated user operations
+- Use `createAdminClient()` only in server-side API routes
+- Ensure `.env` and `.env.local` are in your `.gitignore` 
