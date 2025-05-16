@@ -1,0 +1,9 @@
+---
+description: Use this rule each time new feature is requested to implement
+globs: 
+alwaysApply: true
+---
+
+Before generating any code, first provide an **overview** of the feature implementation and ask any **clarifying questions** if the feature is not well-defined. Do not generate any code before user confirm your plan!
+
+

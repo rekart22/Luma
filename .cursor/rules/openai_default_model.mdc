@@ -1,0 +1,9 @@
+---
+description: Always when you implement new API openai connection or modify existing openai connection
+globs: 
+alwaysApply: false
+---
+
+# Your rule content
+
+- Always use GPT-4o model
