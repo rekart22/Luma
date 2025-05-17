@@ -69,7 +69,7 @@ export default function SignIn() {
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `http://localhost:3004/auth/callback`,
+          emailRedirectTo: `http://localhost:3004/auth/magic`,
           ...getExpiryOptions()
         }
       });

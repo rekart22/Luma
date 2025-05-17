@@ -65,7 +65,7 @@ export default function Dashboard() {
             </CardContent>
             <CardFooter>
               <Button asChild className="w-full bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700">
-                <Link href="/chat">
+                <Link href="/chat-app">
                   <MessageSquare className="mr-2 h-4 w-4" />
                   Start Chatting
                 </Link>
