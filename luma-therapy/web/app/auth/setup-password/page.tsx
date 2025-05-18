@@ -10,6 +10,7 @@ import { Label } from "@/components/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/components/ui/card";
 import { toast } from "sonner";
 import { Eye, EyeOff, Lock, AlertCircle, CheckCircle2 } from "lucide-react";
+import { logger, generateTraceId } from "@/lib/utils";
 
 export default function SetupPassword() {
   const router = useRouter();
@@ -73,55 +74,49 @@ export default function SetupPassword() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    const traceId = generateTraceId();
+    logger.info("Password setup attempt", { traceId, user: user?.id });
     // Validate password
     if (password !== confirmPassword) {
+      logger.warn("Password setup failed: passwords do not match", { traceId, user: user?.id });
       toast.error("Passwords don't match");
       return;
     }
-    
     if (passwordStrength.score < 3) {
+      logger.warn("Password setup failed: password not strong enough", { traceId, user: user?.id });
       toast.error("Password is not strong enough");
       return;
     }
-    
     setIsLoading(true);
-    
     try {
       // Update password in Supabase Auth
       const { error: passwordError } = await supabase.auth.updateUser({
         password: password
       });
-      
       if (passwordError) {
+        logger.error("Password setup failed: Supabase error", { traceId, user: user?.id, error: passwordError.message });
         throw passwordError;
       }
-      
-      // Also update the user_profiles table to mark password as set up
-      // The trigger should handle this automatically, but we'll do it explicitly as well
+      // Also update the profiles table to mark password as set up
       if (user) {
         const { error: profileError } = await supabase
-          .from('user_profiles')
+          .from('profiles')
           .upsert({ 
             id: user.id,
             has_password_setup: true,
             updated_at: new Date().toISOString()
           });
-        
         if (profileError) {
-          console.error("Error updating user profile:", profileError);
-          // Don't throw here, as the password is already set
+          logger.warn("Password setup: user profile update error", { traceId, user: user?.id, error: profileError.message });
         }
       }
-      
+      logger.info("Password setup successful", { traceId, user: user?.id });
       toast.success("Password successfully set!");
-      
-      // Redirect to dashboard after successful password setup
       setTimeout(() => {
         router.push("/dashboard");
       }, 1500);
-      
     } catch (error: any) {
+      logger.error("Password setup failed: exception", { traceId, user: user?.id, error: error.message });
       toast.error(error.message || "Failed to set password");
     } finally {
       setIsLoading(false);

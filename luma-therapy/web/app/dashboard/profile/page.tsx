@@ -20,6 +20,7 @@ import {
   CheckCircle2,
   Save
 } from "lucide-react";
+import { logger, generateTraceId } from "@/lib/utils";
 
 export default function ProfileSettings() {
   const { user, loading } = useAuth();
@@ -55,7 +56,7 @@ export default function ProfileSettings() {
       const checkPasswordSetup = async () => {
         try {
           const { data, error } = await supabase
-            .from('user_profiles')
+            .from('profiles')
             .select('has_password_setup')
             .eq('id', user.id)
             .single();
@@ -132,67 +133,61 @@ export default function ProfileSettings() {
 
   const handlePasswordUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    const traceId = generateTraceId();
+    logger.info(hasPassword ? "Password change attempt" : "Password setup attempt", { traceId, user: user?.id });
     // Validate password
     if (password !== confirmPassword) {
+      logger.warn("Password change/setup failed: passwords do not match", { traceId, user: user?.id });
       toast.error("Passwords don't match");
       return;
     }
-    
     if (passwordStrength.score < 3) {
+      logger.warn("Password change/setup failed: password not strong enough", { traceId, user: user?.id });
       toast.error("Password is not strong enough");
       return;
     }
-    
     setIsChangingPassword(true);
-    
     try {
-      // For first-time password setup
       if (!hasPassword) {
-        const { error } = await supabase.auth.updateUser({
-          password: password
-        });
-        
-        if (error) throw error;
+        const { error } = await supabase.auth.updateUser({ password: password });
+        if (error) {
+          logger.error("Password setup failed: Supabase error", { traceId, user: user?.id, error: error.message });
+          throw error;
+        }
       } else {
-        // For password change (requires current password verification)
         if (!currentPassword) {
+          logger.warn("Password change failed: current password missing", { traceId, user: user?.id });
           toast.error("Current password is required");
           setIsChangingPassword(false);
           return;
         }
-        
-        // This step would typically require server-side validation of current password
-        // For this implementation, we're keeping it client-side, but in production
-        // you would verify the current password server-side before allowing changes
-        const { error } = await supabase.auth.updateUser({
-          password: password
-        });
-        
-        if (error) throw error;
+        // In production, verify current password server-side before allowing changes
+        const { error } = await supabase.auth.updateUser({ password: password });
+        if (error) {
+          logger.error("Password change failed: Supabase error", { traceId, user: user?.id, error: error.message });
+          throw error;
+        }
       }
-      
-      // Also update the user_profiles table
       if (user) {
         const { error: profileError } = await supabase
-          .from('user_profiles')
+          .from('profiles')
           .upsert({ 
             id: user.id,
             has_password_setup: true,
             updated_at: new Date().toISOString()
           });
-        
         if (profileError) {
-          console.error("Error updating user profile:", profileError);
+          logger.warn("Password change/setup: user profile update error", { traceId, user: user?.id, error: profileError.message });
         }
       }
-      
+      logger.info(hasPassword ? "Password change successful" : "Password setup successful", { traceId, user: user?.id });
       setHasPassword(true);
       toast.success("Password successfully updated");
       setPassword("");
       setConfirmPassword("");
       setCurrentPassword("");
     } catch (error: any) {
+      logger.error("Password change/setup failed: exception", { traceId, user: user?.id, error: error.message });
       toast.error(error.message || "Failed to update password");
     } finally {
       setIsChangingPassword(false);
