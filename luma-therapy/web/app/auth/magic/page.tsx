@@ -10,17 +10,40 @@ export default function MagicLinkHandler() {
   const [message, setMessage] = useState("Signing you in...");
 
   useEffect(() => {
+    console.log("[MAGIC LINK] Handler loaded");
     // Only run on client
     if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      const code = url.searchParams.get("code");
+      if (code) {
+        setMessage("Processing your sign-in (code param)...");
+        console.log("[MAGIC LINK] Found code param:", code);
+        supabase.auth.exchangeCodeForSession(code)
+          .then(({ data, error }) => {
+            if (error) {
+              setMessage("Sign-in failed!");
+              toast.error("Failed to sign in: " + error.message);
+              router.replace("/auth/signin?error=magiclink_failed");
+            } else {
+              setMessage("Success! Redirecting...");
+              toast.success("Successfully signed in!");
+              console.log("[MAGIC LINK] Session set via code param, about to redirect. document.cookie:", document.cookie);
+              setTimeout(() => {
+                console.log("[MAGIC LINK] Before redirect, document.cookie:", document.cookie);
+                window.location.replace("/chat-app");
+              }, 2500);
+            }
+          });
+        return;
+      }
+      // Fallback: hash-based flow
       const hash = window.location.hash;
       if (hash) {
-        setMessage("Processing your sign-in...");
+        setMessage("Processing your sign-in (hash)...");
         const params = new URLSearchParams(hash.substring(1));
         const access_token = params.get("access_token");
         const refresh_token = params.get("refresh_token");
-        
         if (access_token && refresh_token) {
-          // Set the session with proper error handling
           supabase.auth.setSession({ access_token, refresh_token })
             .then(({ data, error }) => {
               if (error) {
@@ -30,12 +53,11 @@ export default function MagicLinkHandler() {
               } else {
                 setMessage("Success! Redirecting...");
                 toast.success("Successfully signed in!");
-                
-                // Wait a bit to ensure session is properly set and persisted
+                console.log("[MAGIC LINK] Session set via hash, about to redirect. document.cookie:", document.cookie);
                 setTimeout(() => {
-                  // Force full page refresh to ensure auth state is fresh
-                  window.location.href = "/chat-app";
-                }, 1500);
+                  console.log("[MAGIC LINK] Before redirect, document.cookie:", document.cookie);
+                  window.location.replace("/chat-app");
+                }, 2500);
               }
             });
         } else {

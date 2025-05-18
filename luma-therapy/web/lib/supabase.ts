@@ -1,4 +1,4 @@
-import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import { createBrowserSupabaseClient } from '@supabase/auth-helpers-nextjs';
 
 // Simplified Database type
 type Database = {
@@ -21,14 +21,4 @@ type Database = {
 
 // Client-side Supabase client (uses anon key only)
 // This is safe to use in the browser as it only has limited permissions
-export const supabase = createSupabaseClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://qwtcgfmfxqjbkmbkymdr.supabase.co',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
-  {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: true
-    }
-  }
-); 
+export const supabase = createBrowserSupabaseClient(); 

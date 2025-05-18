@@ -121,9 +121,9 @@ export async function GET(request: NextRequest) {
       console.log('User profile already exists')
     }
     
-    // Redirect to the dashboard on success
-    console.log('Authentication complete, redirecting to dashboard')
-    return NextResponse.redirect(new URL(DASHBOARD_URL))
+    // Redirect to the chat-app on success
+    console.log('Authentication complete, redirecting to chat-app')
+    return NextResponse.redirect(new URL(`${BASE_URL}/chat-app`))
   } catch (error) {
     console.error('Callback error:', error)
     return NextResponse.redirect(
