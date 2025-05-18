@@ -35,17 +35,19 @@ luma-therapy/
 ## Authentication Implementation
 
 1. **Supabase Integration** - Implemented authentication using Supabase Auth Helpers for Next.js.
-2. **Multiple Auth Methods** - Added support for Google OAuth, GitHub OAuth, and magic link email authentication.
+2. **Multiple Auth Methods** - Added support for Google OAuth, GitHub OAuth, and magic link email authentication (supports both PKCE and hash-based flows).
 3. **Protected Routes** - Set up middleware for route protection for dashboard and chat routes.
 4. **Session Management** - Implemented "Remember me" functionality with configurable session duration.
 5. **User Profiles** - Automatically create user profiles on first sign-in.
+6. **Redirection** - All successful sign-ins (OAuth or magic link) redirect to /chat-app.
+7. **Session Detection** - Uses createPagesBrowserClient from @supabase/auth-helpers-nextjs for correct PKCE/session handling.
+8. **Error Handling** - If user is signed in, errors are suppressed and user is redirected; no error toasts on successful sign-in.
 
 ## Known Issues
 
-1. **Magic Link Authentication** - Currently encountering an issue where clicking on the authentication link in emails redirects to the sign-in page with "No authorization code provided" error. This is likely due to a port mismatch between development URLs.
-2. **Environment Configuration** - Issues with loading Supabase environment variables consistently between different parts of the application.
+- None for authentication as of latest update. Previous magic link issues are resolved.
 
 ## Next Steps
-- Fix the magic link authentication issue by ensuring consistent URL and port usage
+- Monitor for edge-case auth issues
 - Begin implementing the Text Chat UI feature
 - Continue documenting each feature and update this file as the project progresses 

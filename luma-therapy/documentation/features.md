@@ -1,7 +1,7 @@
 # Luma Therapy Chat - Feature Roadmap
 
 ## Feature #1: Auth Gateway
-**Status**: In Progress
+**Status**: Complete
 **Dependencies**: None
 **Owner**: Dev Team
 
@@ -11,6 +11,9 @@
 - Implement protected routes
 - Add "Remember me" functionality
 - Handle session expiration and refresh
+- Support both PKCE (?code=...) and hash-based (#access_token=...) magic link flows
+- Robust error handling for all auth flows
+- Redirect to /chat-app after successful sign-in
 
 ### Implementation Notes
 - Used Next.js App Router with Supabase Auth Helpers
@@ -18,23 +21,23 @@
 - Implemented automatic profile creation on first sign-in
 - Added Row Level Security to database tables
 - Session duration: 24 hours (default) or 30 days (remember me)
-- Currently experiencing issues with email magic link authentication:
-  - Clicking links from emails results in "No authorization code provided" error
-  - The issue appears to be related to port mismatches (3000 vs 3004) in redirect URLs
-  - Environment variable loading inconsistencies between client and server components
+- Magic link authentication now supports both PKCE and hash-based flows
+- Error handling improved: if user is signed in, errors are suppressed and user is redirected
+- All successful sign-ins (OAuth or magic link) redirect to /chat-app
+- Uses createPagesBrowserClient from @supabase/auth-helpers-nextjs for correct PKCE/session handling
 
 ### Testing Strategy
 - Test OAuth flows with Google and GitHub
-- Verify email magic link authentication
+- Verify email magic link authentication (both PKCE and hash-based)
 - Check session persistence across browser restarts
 - Validate redirection to protected routes
 - Verify profile creation and data retrieval
+- Confirm no error toasts are shown on successful sign-in
+- Test sign-out and ensure session/cookies are cleared
 
 ### Next Steps
-- Fix port configuration to ensure consistent URLs throughout the application
-- Ensure Supabase environment variables are properly loaded
-- Modify callback route to better handle authentication codes
-- Add more robust error handling in the auth flow
+- Monitor for edge-case auth issues
+- Continue to improve error messaging and UX
 
 ## Feature #2: Text Chat UI
 **Status**: Planning

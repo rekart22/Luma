@@ -82,4 +82,16 @@ Key points:
 - Never expose the `SUPABASE_API_KEY` to client-side code
 - Use `createClient()` for authenticated user operations
 - Use `createAdminClient()` only in server-side API routes
-- Ensure `.env` and `.env.local` are in your `.gitignore` 
+- Ensure `.env` and `.env.local` are in your `.gitignore`
+
+## Magic Link Authentication (PKCE & Hash-based)
+
+- The app now supports both PKCE (?code=...) and hash-based (#access_token=...) magic link flows.
+- Uses createPagesBrowserClient from @supabase/auth-helpers-nextjs for correct session and PKCE handling.
+- After successful sign-in (OAuth or magic link), users are always redirected to /chat-app.
+- If an error occurs but the user is actually signed in, the UI will not show an error toast and will redirect to /chat-app.
+- Error toasts are only shown if the user is not signed in after the auth attempt.
+
+## Troubleshooting
+- If you see an error message but are signed in, the UI will now auto-redirect and not show the error.
+- If you are not signed in, you will see an error toast and be redirected to the sign-in page. 
