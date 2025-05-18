@@ -76,6 +76,7 @@ export default function SetupPassword() {
     e.preventDefault();
     const traceId = generateTraceId();
     logger.info("Password setup attempt", { traceId, user: user?.id });
+    console.log("[TEST] Password setup attempt", { traceId, user: user?.id });
     // Validate password
     if (password !== confirmPassword) {
       logger.warn("Password setup failed: passwords do not match", { traceId, user: user?.id });
@@ -111,13 +112,15 @@ export default function SetupPassword() {
         }
       }
       logger.info("Password setup successful", { traceId, user: user?.id });
-      toast.success("Password successfully set!");
+      console.log("[TEST] Password setup successful", { traceId, user: user?.id });
+      toast.success("[TEST] Password setup successful (check console)");
       setTimeout(() => {
         router.push("/dashboard");
       }, 1500);
     } catch (error: any) {
       logger.error("Password setup failed: exception", { traceId, user: user?.id, error: error.message });
-      toast.error(error.message || "Failed to set password");
+      console.log("[TEST] Password setup failed", { traceId, user: user?.id, error: error.message });
+      toast.error("[TEST] Password setup failed (check console)");
     } finally {
       setIsLoading(false);
     }

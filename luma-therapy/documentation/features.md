@@ -33,6 +33,7 @@
 - All known authentication and profile creation issues have been resolved as of the latest update
 - Previous issues with missing profile rows, RLS, and password setup are fixed
 - All flows (signup, password setup/change, profile access) tested and confirmed working as of latest update
+- Backend now loads environment variables from the project root `.env` file (above `luma-therapy/`).
 
 ### Testing Strategy
 - Test OAuth flows with Google and GitHub

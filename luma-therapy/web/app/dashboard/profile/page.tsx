@@ -135,6 +135,7 @@ export default function ProfileSettings() {
     e.preventDefault();
     const traceId = generateTraceId();
     logger.info(hasPassword ? "Password change attempt" : "Password setup attempt", { traceId, user: user?.id });
+    console.log("[TEST] Password change/setup attempt", { traceId, user: user?.id });
     // Validate password
     if (password !== confirmPassword) {
       logger.warn("Password change/setup failed: passwords do not match", { traceId, user: user?.id });
@@ -181,13 +182,34 @@ export default function ProfileSettings() {
         }
       }
       logger.info(hasPassword ? "Password change successful" : "Password setup successful", { traceId, user: user?.id });
+      console.log("[TEST] Password change/setup successful", { traceId, user: user?.id });
       setHasPassword(true);
       toast.success("Password successfully updated");
       setPassword("");
       setConfirmPassword("");
       setCurrentPassword("");
+      // --- AUDIT LOG POST ---
+      if (user?.id && traceId) {
+        fetch("http://127.0.0.1:8000/auth/change-password-audit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            user_id: user.id,
+            event_type: hasPassword ? "password_change" : "password_setup",
+            trace_id: traceId,
+            meta: {
+              timestamp: new Date().toISOString(),
+              user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined
+            }
+          })
+        }).catch(err => {
+          logger.warn("Failed to log password change event to audit log", { traceId, user: user.id, error: err?.message });
+        });
+      }
     } catch (error: any) {
       logger.error("Password change/setup failed: exception", { traceId, user: user?.id, error: error.message });
+      console.log("[TEST] Password change/setup failed", { traceId, user: user?.id, error: error.message });
+      toast.error("[TEST] Password change/setup failed (check console)");
       toast.error(error.message || "Failed to update password");
     } finally {
       setIsChangingPassword(false);

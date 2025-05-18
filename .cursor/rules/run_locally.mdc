@@ -3,7 +3,6 @@ description:
 globs: 
 alwaysApply: false
 ---
-
 --MCP brwoser
 npx @agentdeskai/browser-tools-server
 
@@ -11,6 +10,11 @@ npx @agentdeskai/browser-tools-server
 
 
 cd luma-therapy/web
-
-
 npm run dev -- --port 3004
+
+
+-- Fast API
+
+cd luma-therapy/api 
+
+uvicorn main:app --host 127.0.0.1 --port 8000 --reload

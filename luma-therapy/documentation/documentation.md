@@ -51,6 +51,11 @@ luma-therapy/
 15. **Schema Fixes** - All NOT NULL constraints and defaults are set to allow trigger-based inserts.
 16. **Testing & Verification** - All flows (signup, password setup/change, profile access) tested and confirmed working as of latest update.
 
+## Environment Variable Loading (Update May 2025)
+
+- The FastAPI backend now loads environment variables from the `.env` file located in the project root (one level above `luma-therapy/`).
+- All password setup/change events are now logged securely, with no sensitive information exposed in logs.
+
 ## Known Issues
 
 - All known authentication and profile creation issues have been resolved as of the latest update.

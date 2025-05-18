@@ -16,7 +16,11 @@ const colors = {
   reset: '\x1b[0m',
 };
 
+// Set this to true to enable DEBUG logs
+const ENABLE_DEBUG_LOGS = false;
+
 function log(level: keyof typeof colors, message: string, meta: any = {}) {
+  if (level === 'debug' && !ENABLE_DEBUG_LOGS) return; // Suppress DEBUG logs unless enabled
   const color = colors[level] || colors.info;
   const reset = colors.reset;
   const ts = new Date().toISOString();
