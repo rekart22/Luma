@@ -31,19 +31,20 @@ export default function MagicLinkHandler() {
                 toast.error("Failed to sign in: " + error.message);
                 router.replace("/auth/signin?error=magiclink_failed");
               } else {
-                // User is signed in, treat as success
+                // User is signed in, redirect to chat app
                 setMessage("Success! Redirecting...");
-                toast.dismiss();
+                toast.success("Successfully signed in!");
                 setTimeout(() => {
                   window.location.replace("/chat-app");
-                }, 500);
+                }, 1500);
               }
             } else {
+              // Authentication successful, redirect to chat app
               setMessage("Success! Redirecting...");
               toast.success("Successfully signed in!");
               setTimeout(() => {
                 window.location.replace("/chat-app");
-              }, 2500);
+              }, 1500);
             }
           });
         return;
@@ -57,19 +58,18 @@ export default function MagicLinkHandler() {
         const refresh_token = params.get("refresh_token");
         if (access_token && refresh_token) {
           supabase.auth.setSession({ access_token, refresh_token })
-            .then(({ data, error }) => {
+            .then(async ({ data, error }) => {
               if (error) {
                 setMessage("Sign-in failed!");
                 toast.error("Failed to sign in: " + error.message);
                 router.replace("/auth/signin?error=magiclink_failed");
               } else {
+                // Authentication successful, redirect to chat app
                 setMessage("Success! Redirecting...");
                 toast.success("Successfully signed in!");
-                console.log("[MAGIC LINK] Session set via hash, about to redirect. document.cookie:", document.cookie);
                 setTimeout(() => {
-                  console.log("[MAGIC LINK] Before redirect, document.cookie:", document.cookie);
                   window.location.replace("/chat-app");
-                }, 2500);
+                }, 1500);
               }
             });
         } else {

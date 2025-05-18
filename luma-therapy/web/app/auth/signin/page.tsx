@@ -12,14 +12,18 @@ import { GitHubLogoIcon } from "@radix-ui/react-icons";
 import { FiMail } from "react-icons/fi";
 import { FcGoogle } from "react-icons/fc";
 import { toast } from "sonner";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Lock, Eye, EyeOff } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/components/ui/tabs";
 
 export default function SignIn() {
   const router = useRouter();
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [authTab, setAuthTab] = useState("magic-link");
 
   // Check for auth errors in URL
   useEffect(() => {
@@ -84,6 +88,34 @@ export default function SignIn() {
     } catch (error: any) {
       console.error("Sign in error:", error);
       toast.error(error.message || "An error occurred during sign in");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Sign in with email/password
+  const handleSignInWithPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      toast.success("Successfully signed in!");
+      setTimeout(() => {
+        // Redirect to dashboard
+        router.push("/dashboard");
+      }, 1000);
+    } catch (error: any) {
+      console.error("Sign in error:", error);
+      toast.error(error.message || "Invalid email or password");
     } finally {
       setIsLoading(false);
     }
@@ -190,48 +222,124 @@ export default function SignIn() {
             </div>
           </div>
           
-          <form onSubmit={handleSignInWithEmail} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="name@example.com"
-                value={email}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
-                required
-              />
-            </div>
+          <Tabs defaultValue="magic-link" value={authTab} onValueChange={setAuthTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="magic-link">Magic Link</TabsTrigger>
+              <TabsTrigger value="password">Password</TabsTrigger>
+            </TabsList>
             
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="remember"
-                checked={rememberMe}
-                onCheckedChange={(checked: boolean) => setRememberMe(checked)}
-              />
-              <Label htmlFor="remember" className="text-sm">
-                Remember me for 30 days
-              </Label>
-            </div>
+            <TabsContent value="magic-link">
+              <form onSubmit={handleSignInWithEmail} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email-magic">Email</Label>
+                  <Input
+                    id="email-magic"
+                    type="email"
+                    placeholder="name@example.com"
+                    value={email}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="remember-magic"
+                    checked={rememberMe}
+                    onCheckedChange={(checked: boolean) => setRememberMe(checked)}
+                  />
+                  <Label htmlFor="remember-magic" className="text-sm">
+                    Remember me for 30 days
+                  </Label>
+                </div>
+                
+                <Button
+                  type="submit"
+                  className="w-full gap-2"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <span className="h-5 w-5 animate-spin rounded-full border-2 border-dotted border-current" />
+                      <span>Sending...</span>
+                    </>
+                  ) : (
+                    <>
+                      <FiMail className="h-5 w-5" />
+                      <span>Sign in with Email</span>
+                    </>
+                  )}
+                </Button>
+              </form>
+            </TabsContent>
             
-            <Button
-              type="submit"
-              className="w-full gap-2"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <span className="h-5 w-5 animate-spin rounded-full border-2 border-dotted border-current" />
-                  <span>Sending...</span>
-                </>
-              ) : (
-                <>
-                  <FiMail className="h-5 w-5" />
-                  <span>Sign in with Email</span>
-                </>
-              )}
-            </Button>
-          </form>
+            <TabsContent value="password">
+              <form onSubmit={handleSignInWithPassword} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email-password">Email</Label>
+                  <Input
+                    id="email-password"
+                    type="email"
+                    placeholder="name@example.com"
+                    value={email}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
+                      required
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="remember-password"
+                    checked={rememberMe}
+                    onCheckedChange={(checked: boolean) => setRememberMe(checked)}
+                  />
+                  <Label htmlFor="remember-password" className="text-sm">
+                    Remember me for 30 days
+                  </Label>
+                </div>
+                
+                <Button
+                  type="submit"
+                  className="w-full gap-2"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <span className="h-5 w-5 animate-spin rounded-full border-2 border-dotted border-current" />
+                      <span>Signing in...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="h-5 w-5" />
+                      <span>Sign in with Password</span>
+                    </>
+                  )}
+                </Button>
+              </form>
+            </TabsContent>
+          </Tabs>
         </CardContent>
         <CardFooter className="flex flex-col items-center justify-center text-xs text-muted-foreground">
           <p>Protected by Supabase Auth.</p>

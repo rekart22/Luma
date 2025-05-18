@@ -1,7 +1,12 @@
+"use client";
+
 import Link from "next/link";
 import { Button } from "@/components/components/ui/button";
+import { useAuth } from "@/components/components/auth/AuthProvider";
 
 export default function Home() {
+  const { user, loading } = useAuth();
+
   return (
     <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 py-12 sm:px-6 lg:px-8 mt-16">
       <div className="w-full max-w-4xl text-center space-y-8">
@@ -17,11 +22,21 @@ export default function Home() {
         </div>
         
         <div className="flex flex-col sm:flex-row gap-4 justify-center mt-10">
-          <Button asChild className="px-8 py-3 text-base font-medium bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700">
-            <Link href="/auth/signin">
-              Sign In
-            </Link>
-          </Button>
+          {!loading && !user ? (
+            <Button asChild className="px-8 py-3 text-base font-medium bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700">
+              <Link href="/auth/signin">
+                Sign In
+              </Link>
+            </Button>
+          ) : user ? (
+            <Button asChild className="px-8 py-3 text-base font-medium bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700">
+              <Link href="/dashboard">
+                Go to Dashboard
+              </Link>
+            </Button>
+          ) : (
+            <div className="h-10 w-28 bg-gray-200 animate-pulse rounded-md"></div>
+          )}
           <Button asChild variant="outline" className="px-8 py-3 text-base font-medium">
             <Link href="#about">
               Learn More
