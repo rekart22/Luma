@@ -66,3 +66,30 @@ luma-therapy/
 - Continue documenting each feature and update this file as the project progresses
 - Begin implementing the Text Chat UI feature
 - Continue to improve error messaging, logging, and UX 
+
+## Password Change Security (Update June 2025)
+
+- Password changes now require verification of the current password before allowing updates.
+- This is enforced via two new PostgreSQL functions:
+  - `verify_user_password(password text)`
+  - `change_user_password(current_plain_password text, new_plain_password text)`
+- The migration for these functions is in `db/supabase/migrations/20240630_verify_current_password.sql`.
+- The frontend profile page now verifies the current password before updating, using a Supabase RPC call.
+- For maximum security, the `change_user_password` function can be used to verify and update in a single transaction.
+- All password changes are logged with trace IDs for auditability.
+
+## Port Configuration
+
+- By default, the Next.js frontend runs on port 3000.
+- For local development, you can run it on port 3004 using `npm run dev -- -p 3004` or `npm run start -- -p 3004`.
+- The FastAPI backend runs on port 8000.
+- CORS and API endpoints should be configured to match the frontend port in use.
+
+## Migration & Setup Steps (addendum)
+
+17. **Password Security Migration** - Run the migration in `db/supabase/migrations/20240630_verify_current_password.sql` to enable secure password change functionality.
+18. **Password Change Flow** - All password changes now require the current password and are verified server-side before updating.
+
+## Known Issues (update)
+- All password change flows are now secure and require current password verification.
+- No known issues with password setup/change as of this update. 

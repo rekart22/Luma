@@ -22,6 +22,15 @@ import {
 } from "lucide-react";
 import { logger, generateTraceId } from "@/lib/utils";
 
+/**
+ * SECURITY RECOMMENDATION:
+ * Password changes should always verify the current password before allowing updates.
+ * We've implemented two options:
+ * 1. Verify password using 'verify_user_password' RPC function then update
+ * 2. Use 'change_user_password' RPC function that handles both verification and update in one transaction (preferred for production)
+ * 
+ * NEVER call supabase.auth.updateUser({ password }) directly without verification!
+ */
 export default function ProfileSettings() {
   const { user, loading } = useAuth();
   
@@ -162,12 +171,49 @@ export default function ProfileSettings() {
           setIsChangingPassword(false);
           return;
         }
-        // In production, verify current password server-side before allowing changes
+        
+        // First verify the current password using our secure function
+        const { data: isPasswordValid, error: verifyError } = await supabase.rpc(
+          'verify_user_password', 
+          { password: currentPassword }
+        );
+        
+        if (verifyError) {
+          logger.error("Password verification failed", { traceId, user: user?.id, error: verifyError.message });
+          throw new Error("Error verifying current password: " + verifyError.message);
+        }
+        
+        if (!isPasswordValid) {
+          logger.warn("Password change failed: incorrect current password", { traceId, user: user?.id });
+          toast.error("Current password is incorrect");
+          setIsChangingPassword(false);
+          return;
+        }
+        
+        // Now we can safely update the password
         const { error } = await supabase.auth.updateUser({ password: password });
         if (error) {
           logger.error("Password change failed: Supabase error", { traceId, user: user?.id, error: error.message });
           throw error;
         }
+        
+        /* 
+        // Alternative implementation: Use the secure change_user_password function
+        // This performs both verification and update in a single server-side transaction
+        // Uncomment and use this in production for maximum security
+        const { data, error: changeError } = await supabase.rpc(
+          'change_user_password', 
+          { 
+            current_plain_password: currentPassword,
+            new_plain_password: password
+          }
+        );
+        
+        if (changeError) {
+          logger.error("Password change failed", { traceId, user: user?.id, error: changeError.message });
+          throw new Error(changeError.message);
+        }
+        */
       }
       if (user) {
         const { error: profileError } = await supabase

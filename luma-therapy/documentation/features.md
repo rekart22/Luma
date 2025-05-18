@@ -1,5 +1,23 @@
 # Luma Therapy Chat - Feature Roadmap
 
+## Security Update: Password Change Flow (June 2025)
+
+- Password changes now require the current password to be verified before allowing updates.
+- This is enforced via two new PostgreSQL functions:
+  - `verify_user_password(password text)`
+  - `change_user_password(current_plain_password text, new_plain_password text)`
+- The migration for these functions is in `db/supabase/migrations/20240630_verify_current_password.sql`.
+- The frontend profile page now verifies the current password before updating, using a Supabase RPC call.
+- For maximum security, the `change_user_password` function can be used to verify and update in a single transaction.
+- All password changes are logged with trace IDs for auditability.
+
+## Port Configuration
+
+- By default, the Next.js frontend runs on port 3000.
+- For local development, you can run it on port 3004 using `npm run dev -- -p 3004` or `npm run start -- -p 3004`.
+- The FastAPI backend runs on port 8000.
+- CORS and API endpoints should be configured to match the frontend port in use.
+
 ## Feature #1: Auth Gateway
 **Status**: Complete
 **Dependencies**: None
