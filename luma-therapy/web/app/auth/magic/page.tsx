@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
@@ -8,9 +8,12 @@ export default function MagicLinkHandler() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("Signing you in...");
+  const processedRef = useRef(false);
 
   useEffect(() => {
     console.log("[MAGIC LINK] Handler loaded");
+    if (processedRef.current) return;
+    processedRef.current = true;
     // Only run on client
     if (typeof window !== "undefined") {
       const url = new URL(window.location.href);
@@ -19,17 +22,26 @@ export default function MagicLinkHandler() {
         setMessage("Processing your sign-in (code param)...");
         console.log("[MAGIC LINK] Found code param:", code);
         supabase.auth.exchangeCodeForSession(code)
-          .then(({ data, error }) => {
+          .then(async ({ data, error }) => {
             if (error) {
-              setMessage("Sign-in failed!");
-              toast.error("Failed to sign in: " + error.message);
-              router.replace("/auth/signin?error=magiclink_failed");
+              // Check if user is actually signed in
+              const { data: userData } = await supabase.auth.getUser();
+              if (!userData?.user) {
+                setMessage("Sign-in failed!");
+                toast.error("Failed to sign in: " + error.message);
+                router.replace("/auth/signin?error=magiclink_failed");
+              } else {
+                // User is signed in, treat as success
+                setMessage("Success! Redirecting...");
+                toast.dismiss();
+                setTimeout(() => {
+                  window.location.replace("/chat-app");
+                }, 500);
+              }
             } else {
               setMessage("Success! Redirecting...");
               toast.success("Successfully signed in!");
-              console.log("[MAGIC LINK] Session set via code param, about to redirect. document.cookie:", document.cookie);
               setTimeout(() => {
-                console.log("[MAGIC LINK] Before redirect, document.cookie:", document.cookie);
                 window.location.replace("/chat-app");
               }, 2500);
             }

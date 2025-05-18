@@ -1,4 +1,4 @@
-import { createBrowserSupabaseClient } from '@supabase/auth-helpers-nextjs';
+import { createPagesBrowserClient } from '@supabase/auth-helpers-nextjs';
 
 // Simplified Database type
 type Database = {
@@ -21,4 +21,4 @@ type Database = {
 
 // Client-side Supabase client (uses anon key only)
 // This is safe to use in the browser as it only has limited permissions
-export const supabase = createBrowserSupabaseClient(); 
+export const supabase = createPagesBrowserClient(); 
