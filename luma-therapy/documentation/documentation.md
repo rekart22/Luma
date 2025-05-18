@@ -38,16 +38,26 @@ luma-therapy/
 2. **Multiple Auth Methods** - Added support for Google OAuth, GitHub OAuth, and magic link email authentication (supports both PKCE and hash-based flows).
 3. **Protected Routes** - Set up middleware for route protection for dashboard and chat routes.
 4. **Session Management** - Implemented "Remember me" functionality with configurable session duration.
-5. **User Profiles** - Automatically create user profiles on first sign-in.
+5. **User Profiles** - Automatically create user profiles on first sign-in using a database trigger on `auth.users` (see below).
 6. **Redirection** - All successful sign-ins (OAuth or magic link) redirect to /chat-app.
 7. **Session Detection** - Uses createPagesBrowserClient from @supabase/auth-helpers-nextjs for correct PKCE/session handling.
 8. **Error Handling** - If user is signed in, errors are suppressed and user is redirected; no error toasts on successful sign-in.
+9. **Password Storage** - Passwords are securely hashed and stored in `auth.users` (never accessible in plaintext).
+10. **Password Setup/Change** - UI and backend logic ensure users can set/change passwords, with logging and trace IDs for all events.
+11. **Logging** - Frontend and backend log all password setup/change attempts, successes, and failures with trace IDs for auditability.
+12. **RLS Security** - Row Level Security (RLS) is enabled on `profiles` and policies restrict access to only the user's own profile (using `id`).
+13. **Database Schema** - The `profiles` table no longer has a redundant `user_id` column; all logic uses `id` (matching `auth.users.id`).
+14. **Database Trigger** - A trigger on `auth.users` automatically creates a row in `profiles` for every new user.
+15. **Schema Fixes** - All NOT NULL constraints and defaults are set to allow trigger-based inserts.
+16. **Testing & Verification** - All flows (signup, password setup/change, profile access) tested and confirmed working as of latest update.
 
 ## Known Issues
 
-- None for authentication as of latest update. Previous magic link issues are resolved.
+- All known authentication and profile creation issues have been resolved as of the latest update.
+- Previous issues with missing profile rows, RLS, and password setup are fixed.
 
 ## Next Steps
-- Monitor for edge-case auth issues
+- Monitor for edge-case auth/profile issues
+- Continue documenting each feature and update this file as the project progresses
 - Begin implementing the Text Chat UI feature
-- Continue documenting each feature and update this file as the project progresses 
+- Continue to improve error messaging, logging, and UX 
