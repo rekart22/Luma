@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
   }
   
   try {
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     const supabase = createRouteHandlerClient<Database>({ cookies: () => cookieStore })
     
     console.log('Exchanging code for session...')

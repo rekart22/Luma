@@ -2,22 +2,37 @@ import os
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-from loguru import logger
 import requests
 from datetime import datetime
 from dotenv import load_dotenv
+
+# Import our custom logger
+from utils.logger import logger
+
+# Import routers
+from routers.chat import router as chat_router
 
 # Load environment variables from .env file in the parent directory of luma-therapy
 DOTENV_PATH = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), '.env'))
 
 # Try to load .env and log the result
 load_dotenv_success = load_dotenv(dotenv_path=DOTENV_PATH)
+logger.info(f"Loaded .env from {DOTENV_PATH}: {load_dotenv_success}")
+
+# Check for required environment variables
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+if not OPENAI_API_KEY:
+    logger.warning("OPENAI_API_KEY not found in environment variables")
 
 # Map .env variable SUPABASE_API_KEY to SUPABASE_SERVICE_ROLE_KEY for code clarity
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or os.environ.get("SUPABASE_API_KEY")
 
-app = FastAPI()
+app = FastAPI(
+    title="Luma Therapy API",
+    description="FastAPI backend for Luma Therapy Chat",
+    version="1.0.0"
+)
 
 # Allow CORS for local dev and production
 # TODO: Replace "https://your-production-domain.com" with your actual production domain
@@ -36,6 +51,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include routers
+app.include_router(chat_router)
 
 class PasswordChangeRequest(BaseModel):
     user_id: str = Field(..., description="User's UUID")

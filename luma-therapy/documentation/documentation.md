@@ -83,7 +83,7 @@ luma-therapy/                # Root project directory
 - Begin implementing the Text Chat UI feature
 - Continue to improve error messaging, logging, and UX 
 
-## Password Change Security (Update June 2025)
+## Password Change Security (Update 19 May 2025)
 
 - Password changes now require verification of the current password before allowing updates.
 - This is enforced via two new PostgreSQL functions:
@@ -110,7 +110,7 @@ luma-therapy/                # Root project directory
 - All password change flows are now secure and require current password verification.
 - No known issues with password setup/change as of this update. 
 
-## Security Improvements (July 2025)
+## Security Improvements (19 May 2025)
 
 ### Critical Security Fixes
 1. **CORS Configuration**
@@ -179,7 +179,7 @@ luma-therapy/                # Root project directory
 - Proper error handling is crucial for auth operations
 - Logging helps track auth flow issues 
 
-## OpenAI Integration Architecture (August 2025)
+## OpenAI Integration Architecture (19 May 2025)
 
 ### Architecture Overview
 ```
@@ -258,7 +258,7 @@ Client (Next.js) -> AI-Orchestra -> FastAPI -> OpenAI
    - State synchronization between services
    - Error handling and retry logic
 
-### Communication Strategy (September 2025)
+### Communication Strategy (19 May 2025)
 
 The system implements a hybrid approach using both Server-Sent Events (SSE) and WebSocket, each optimized for specific use cases:
 
@@ -337,3 +337,48 @@ The system implements a hybrid approach using both Server-Sent Events (SSE) and 
    - WebSocket connection management
    - Memory operation optimization
    - State synchronization at scale 
+
+## Cookie Management & Auth Updates (19 May 2025)
+
+### Recent Improvements
+1. **Cookie Handling Architecture**
+   - Implemented proper async cookie handling for Next.js 15
+   - Created dedicated Supabase client utilities:
+     ```typescript
+     /web/lib/supabase/server.ts    // Server-side client
+     /web/lib/auth-helpers.ts       // Auth helper functions
+     /web/middleware.ts             // Auth middleware
+     ```
+   - Simplified cookie management using createRouteHandlerClient
+   - Enhanced error logging and tracing
+
+2. **Authentication Flow**
+   - Streamlined auth middleware implementation
+   - Improved session refresh handling
+   - Better error propagation and logging
+   - Protected route handling with proper redirects
+
+3. **Known Issues**
+   - Cookie warning in /api/chat/stream route:
+     ```
+     Error: Route "/api/chat/stream" used cookies().get(...). 
+     cookies() should be awaited before using its value.
+     ```
+   - This warning appears but doesn't affect functionality
+   - Chat streaming works despite the warning
+
+### Next Steps
+1. **High Priority**
+   - Resolve async cookie warning in chat stream route
+   - Implement proper cookie awaiting in stream handler
+   - Add error boundary for chat stream failures
+
+2. **Medium Priority**
+   - Enhance logging for chat stream errors
+   - Add retry logic for stream failures
+   - Improve error messaging for users
+
+3. **Low Priority**
+   - Document all cookie-related configurations
+   - Add monitoring for auth flow success rates
+   - Create troubleshooting guide for common issues 

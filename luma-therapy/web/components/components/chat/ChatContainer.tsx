@@ -18,43 +18,87 @@ type Message = {
 export default function ChatContainer() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
+  const [currentStreamingMessage, setCurrentStreamingMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to the bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, currentStreamingMessage]);
 
-  // Add an initial greeting from Luma when the first user message is sent
-  useEffect(() => {
-    // Only trigger when going from 0 to 1 message (first user message)
-    if (messages.length === 1 && messages[0].role === 'user') {
-      setIsTyping(true);
-      console.log("Showing initial Luma greeting...");
-      
-      // Show Luma's greeting after a short delay
-      setTimeout(() => {
-        const initialGreeting: Message = {
-          id: Date.now().toString(),
-          content: "Hi there. I'm Luma, your therapeutic companion. It's good to connect with you. I'm here to listen, reflect, and support you through our conversations.",
-          role: "assistant",
-          timestamp: new Date(),
-        };
-        
-        setIsTyping(false);
-        setMessages((prev) => [...prev, initialGreeting]);
-        console.log("Initial greeting added:", initialGreeting);
-      }, 1500);
+  // Helper function to generate a message ID
+  const generateMessageId = () => Date.now().toString();
+
+  // Process the streamed response from the API
+  const processStreamedResponse = async (response: Response) => {
+    if (!response.body) {
+      throw new Error("Response body is null");
     }
-  }, [messages]);
 
-  const handleSendMessage = (content: string) => {
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let messageContent = "";
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        // Decode the received chunk
+        const chunk = decoder.decode(value);
+        
+        // Process each line (event) in the chunk
+        const lines = chunk.split("\n\n");
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            try {
+              const data = JSON.parse(line.substring(6));
+              
+              if (data.error) {
+                throw new Error(data.error);
+              }
+              
+              if (data.done) {
+                // End of stream, add the complete message
+                if (messageContent.trim()) {
+                  const assistantMessage: Message = {
+                    id: generateMessageId(),
+                    content: messageContent,
+                    role: "assistant",
+                    timestamp: new Date(),
+                  };
+                  setMessages(prev => [...prev, assistantMessage]);
+                }
+                setIsTyping(false);
+                setCurrentStreamingMessage("");
+                return;
+              }
+              
+              if (data.token) {
+                // Update the streaming message with the new token
+                messageContent += data.token;
+                setCurrentStreamingMessage(messageContent);
+              }
+            } catch (e) {
+              console.error("Error parsing stream data:", e);
+              // Continue processing other chunks even if one fails
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error reading stream:", error);
+      setIsTyping(false);
+    }
+  };
+
+  const handleSendMessage = async (content: string) => {
     console.log("Message received:", content);
     if (content.trim() === "") return;
     
     // Add user message
     const userMessage: Message = {
-      id: Date.now().toString(),
+      id: generateMessageId(),
       content,
       role: "user",
       timestamp: new Date(),
@@ -63,53 +107,45 @@ export default function ChatContainer() {
     setMessages((prev) => [...prev, userMessage]);
     console.log("User message added:", userMessage);
     
-    // Simulate Luma typing
+    // Show typing indicator
     setIsTyping(true);
     console.log("Luma is typing...");
     
-    // Simulate response after a delay
-    setTimeout(() => {
-      let lumaResponse = "";
+    try {
+      // Prepare messages array for the API
+      const apiMessages = messages
+        .concat(userMessage)
+        .map(msg => ({ role: msg.role, content: msg.content }));
       
-      // Determine appropriate response based on user message content
-      const lowerContent = content.toLowerCase();
+      // Call the streaming API
+      const response = await fetch("/api/chat/stream", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ messages: apiMessages }),
+      });
       
-      if (lowerContent.includes("feeling down") || lowerContent.includes("sad")) {
-        lumaResponse = "I'm sorry to hear you're feeling down. Would you like to talk about what's contributing to these feelings?"; 
-      } else if (lowerContent.includes("burned out") || lowerContent.includes("exhausted")) {
-        lumaResponse = "Burnout can be really challenging. Let's explore what's causing this feeling and what small steps might help you recharge."; 
-      } else if (lowerContent.includes("advice")) {
-        lumaResponse = "I'd be happy to explore this with you. Could you share a bit more about the situation you'd like advice on?"; 
-      } else if (lowerContent.includes("anxious") || lowerContent.includes("calm down")) {
-        lumaResponse = "Let's try a quick grounding exercise. Can you name five things you can see right now in your surroundings?"; 
-      } else if (lowerContent.includes("mindfulness")) {
-        lumaResponse = "Mindfulness is a wonderful practice. Would you like to try a brief guided breathing exercise to center yourself?"; 
-      } else if (lowerContent.includes("celebrate") || lowerContent.includes("win")) {
-        lumaResponse = "That's wonderful! I'd love to hear more about what you're celebrating. Acknowledging our victories, big or small, is so important."; 
-      } else {
-        // Default responses if no specific pattern is matched
-        const lumaResponses = [
-          "I understand how that feels. Would you like to explore that further?",
-          "Thank you for sharing that with me. How long have you been feeling this way?",
-          "That's interesting. Can you tell me more about what might have triggered these thoughts?",
-          "I'm here to listen. Would it help to talk about specific situations where this comes up?",
-          "I appreciate your openness. Sometimes naming our feelings is the first step to understanding them.",
-        ];
-        
-        lumaResponse = lumaResponses[Math.floor(Math.random() * lumaResponses.length)];
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
       }
       
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: lumaResponse,
+      // Process the streaming response
+      await processStreamedResponse(response);
+    } catch (error) {
+      console.error("Error sending message:", error);
+      
+      // Show an error message
+      const errorMessage: Message = {
+        id: generateMessageId(),
+        content: "I'm sorry, I'm having trouble connecting. Please try again in a moment.",
         role: "assistant",
         timestamp: new Date(),
       };
       
       setIsTyping(false);
-      setMessages((prev) => [...prev, assistantMessage]);
-      console.log("Luma response added:", assistantMessage);
-    }, 1500 + Math.random() * 1500); // Random delay between 1.5-3s for realism
+      setMessages((prev) => [...prev, errorMessage]);
+    }
   };
 
   return (
@@ -141,7 +177,11 @@ export default function ChatContainer() {
                     <Logo size="sm" />
                   </div>
                   <div className="bg-gradient-to-r from-[#FCE6DF] to-[#FFFAF9] rounded-2xl rounded-tl-sm border border-[#E9BBAE]/30 shadow-md p-3">
-                    <TypingIndicator />
+                    {currentStreamingMessage ? (
+                      <div>{currentStreamingMessage}</div>
+                    ) : (
+                      <TypingIndicator />
+                    )}
                   </div>
                 </div>
               )}

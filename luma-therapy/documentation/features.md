@@ -18,10 +18,26 @@
 - The FastAPI backend runs on port 8000.
 - CORS and API endpoints should be configured to match the frontend port in use.
 
-## Feature #1: Auth Gateway
-**Status**: Complete
+## Auth Gateway (Feature #1)
+**Status**: Complete with Known Issues
 **Dependencies**: None
 **Owner**: Dev Team
+
+### Recent Updates (September 2025)
+- Implemented proper async cookie handling for Next.js 15
+- Created dedicated Supabase client utilities
+- Streamlined auth middleware implementation
+- Enhanced error logging and tracing
+
+### Known Issues
+1. Cookie warning in chat stream route:
+   ```
+   Error: Route "/api/chat/stream" used cookies().get(...). 
+   cookies() should be awaited before using its value.
+   ```
+   - Warning appears but doesn't affect functionality
+   - Chat streaming continues to work
+   - Needs resolution in next sprint
 
 ### Requirements
 - Implement Google & GitHub OAuth via Supabase SSR helpers
@@ -87,25 +103,40 @@
 - Test signout flow reliability
 
 ### Next Steps
-- Monitor for edge-case auth/profile issues
-- Continue to improve error messaging, logging, and UX
-- Continue documenting each feature and update this file as the project progresses
+1. **Critical**
+   - Fix async cookie warning in chat stream route
+   - Implement proper cookie awaiting
+   - Add error boundaries
 
-## Feature #2: Text Chat UI
-**Status**: Planning
+2. **Improvements**
+   - Enhance stream error logging
+   - Add retry logic
+   - Improve user error messaging
+
+## Text Chat UI (Feature #2)
+**Status**: Partially Complete
 **Dependencies**: Feature #1
-**Owner**: TBD
+**Owner**: Dev Team
 
 ### Requirements
-- Text input + response stream
-- Adapt Macaly chat component
-- Connect to /api/chat endpoint
+- ✅ Text input + response stream
+- ✅ Adapt Macaly chat component
+- ✅ Connect to /api/chat endpoint
+- ⚠️ Resolve cookie warning in stream route
+- ⚠️ Add error boundaries and retry logic
 
 ### Implementation Notes
-- TBD
+- Chat streaming is functional
+- Basic UI components implemented
+- Cookie warning needs resolution
+- Error handling needs improvement
 
 ### Testing Strategy
-- TBD
+- ✅ Basic chat functionality
+- ✅ Message streaming
+- ✅ UI component rendering
+- ⏳ Error boundary testing
+- ⏳ Retry logic testing
 
 ## Feature #3: Core-Therapist Agent
 **Status**: Planning
