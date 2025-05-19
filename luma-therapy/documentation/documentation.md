@@ -178,3 +178,162 @@ luma-therapy/                # Root project directory
 - All auth-related cookies must be systematically cleared
 - Proper error handling is crucial for auth operations
 - Logging helps track auth flow issues 
+
+## OpenAI Integration Architecture (August 2025)
+
+### Architecture Overview
+```
+Client (Next.js) -> AI-Orchestra -> FastAPI -> OpenAI
+                        ↓             ↓
+                    State Mgmt     mem0
+```
+
+### Component Responsibilities
+
+1. **AI-Orchestra (TypeScript)**
+   - Acts as the central coordinator for all system operations
+   - Manages state machines for all agents (Core-Therapist, Safety-Sentinel, Session-Summary)
+   - Controls conversation flow and agent transitions
+   - Orchestrates calls to FastAPI for AI and memory operations
+   - Maintains conversation context and agent states
+   - Makes decisions about when to call which service
+   - Handles WebSocket connections with frontend
+
+2. **FastAPI (Python)**
+   - Executes AI operations through OpenAI
+   - Implements memory operations via mem0
+   - Handles token management and rate limiting
+   - Processes embeddings and vector operations
+   - Provides RESTful and WebSocket endpoints for AI-Orchestra
+   - Manages API keys and security
+
+3. **Next.js (Frontend)**
+   - Manages UI state and real-time updates
+   - Maintains WebSocket connection to AI-Orchestra
+   - Handles user session
+   - Provides chat interface
+
+### Architecture Decision Rationale
+
+1. **AI-Orchestra as Central Coordinator**
+   - Acts as the "brain" of the system
+   - Makes decisions about agent transitions
+   - Coordinates all service calls
+   - Maintains system state and conversation flow
+   - Delegates heavy lifting to specialized services
+
+2. **Why Python for OpenAI Integration**
+   - First-class support from OpenAI's Python SDK
+   - Superior memory management with mem0
+   - Better token counting and context management
+   - Robust ML/AI ecosystem for future extensions
+   - More secure API key management
+   - Native async support with AsyncOpenAI
+
+3. **Communication Flow**
+   - Frontend ←→ AI-Orchestra: WebSocket for real-time chat
+   - AI-Orchestra ←→ FastAPI: REST/WebSocket for AI operations
+   - FastAPI ←→ OpenAI: SDK calls for AI operations
+   - FastAPI ←→ mem0: Direct integration for memory operations
+
+### Implementation Notes
+
+1. **AI-Orchestra Implementation**
+   - State machine definitions for each agent
+   - WebSocket server for frontend communication
+   - Service client for FastAPI communication
+   - Conversation context management
+   - Agent coordination logic
+
+2. **FastAPI Implementation**
+   - OpenAI service integration
+   - Memory service integration
+   - WebSocket and REST endpoints
+   - Token management
+   - Security middleware
+
+3. **Communication Protocol**
+   - WebSocket for real-time bidirectional communication
+   - REST endpoints for specific operations
+   - State synchronization between services
+   - Error handling and retry logic
+
+### Communication Strategy (September 2025)
+
+The system implements a hybrid approach using both Server-Sent Events (SSE) and WebSocket, each optimized for specific use cases:
+
+1. **Server-Sent Events (SSE)**
+   - Used for AI response streaming
+   - Handles the "token firehose" from OpenAI
+   - One-directional, efficient text streaming
+   - Lower overhead for high-bandwidth text transfer
+   - Native HTTP/2 support and automatic reconnection
+   - Example use cases:
+     ```typescript
+     // AI response streaming
+     async function streamAIResponse(message: string) {
+       const response = await fetch('/api/chat/stream', {
+         method: 'POST',
+         headers: { 'Accept': 'text/event-stream' },
+         body: JSON.stringify({ message })
+       });
+       // Handle streaming response...
+     }
+     ```
+
+2. **WebSocket**
+   - Used for agent orchestration and state management
+   - Bi-directional communication for agent coordination
+   - Low-latency state updates and transitions
+   - Real-time agent status and control signals
+   - Example use cases:
+     ```typescript
+     // Agent state updates
+     interface AgentStateUpdate {
+       agentId: string;
+       state: 'thinking' | 'responding' | 'analyzing';
+       context: Record<string, unknown>;
+     }
+     ```
+
+3. **Rationale for Hybrid Approach**
+   - SSE optimizes high-bandwidth, one-way text streaming
+   - WebSocket enables real-time agent coordination
+   - Reduced server resource usage
+   - Better error handling and recovery
+   - Proven pattern (used by production-grade agents)
+   - Clear separation of concerns
+
+4. **Implementation Strategy**
+   - SSE endpoints in FastAPI for AI responses
+   - WebSocket connections for AI-Orchestra coordination
+   - Clear protocol boundaries and error handling
+   - Automatic reconnection and fallback mechanisms
+
+### Deployment Considerations
+
+1. **Service Organization**
+   ```
+   /luma-therapy
+     /web                 # Next.js frontend
+     /ai-orchestra        # Agent coordination
+     /api                 # FastAPI service
+     /db                  # Database migrations
+   ```
+
+2. **Environment Setup**
+   - Separate environment variables for each service
+   - Clear documentation of all required configurations
+   - Development and production environment parity
+
+3. **Monitoring Strategy**
+   - Service health checks
+   - WebSocket connection monitoring
+   - Memory usage tracking
+   - Agent state logging
+
+4. **Scaling Considerations**
+   - Horizontal scaling of FastAPI service
+   - WebSocket connection management
+   - Memory operation optimization
+   - State synchronization at scale 

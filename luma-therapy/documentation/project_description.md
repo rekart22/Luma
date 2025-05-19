@@ -35,46 +35,126 @@ Luma is a supportive chat application designed to provide meaningful conversatio
 ```
  ┌──────────────────────────────────────────────────────────────────┐
  │                   Client (web / mobile PWA)                      │
- │      React UI (Vibe-coded, Macaly source) • Text Chat • SSE      │
+ │      React UI (Vibe-coded, Macaly source) • Text Chat           │
  └─────────▲───────────────────────┬───────────────────────────────┘
-           │                       │ streamText()
-           │                       │
+           │                       │ WebSocket (agent coordination)
+           │                       │ SSE (AI responses)
            │               Edge Function (Next.js on Vercel)
            │               ─ handles auth cookie, rate limits ──────
            │                       │
-   OAuth   │   REST/RPC            ▼                                   
-  (Google/ ▼ )         ┌────────────────────────────┐  function-call
- GitHub)  └──────────► │  AI-Orchestra (TypeScript) │ ─────────────┐
-                       │  • state-machine agents    │              │
-                       │  • openAI stream           │              │
-                       └─────────┬──────────────────┘              │
-                                 │ RPC: /profile /embed /analyse   │
-                                 ▼                                 ▼
-                    ┌───────────────────────┐        ┌────────────────────┐
-                    │   FastAPI micro-svc   │◄──────►│  OpenAI (chat)     │
-                    │  • create embeddings  │        └────────────────────┘
-                    │  • personality logic  │
-                    └────────▲─────┬────────┘
-                             │     │
-                             │     │ Memory Operations
-                             │     ▼
-                    SQL/Vector│  ┌──────────────────────┐
-                             │  │       mem0           │
-                             │  │ • hierarchical mem   │
-                             │  │ • memory operations  │
-                             │  │ • temporal context   │
-                             │  └──────────┬───────────┘
-                             │             │ Sync/Backup
-                             ▼             ▼
-                     Supabase Postgres (+pgvector)
-                     • users / auth
-                     • messages (vectors)
-                     • persona_scores (JSONB)
-                     • conversations (metadata)
+   OAuth   │   WebSocket          ▼
+  (Google/ ▼ )         ┌────────────────────────────┐
+ GitHub)  └──────────► │    AI-Orchestra (TypeScript)│
+                       │  • Agent coordination       │
+                       │  • State machines           │
+                       │  • Conversation flow        │
+                       │  • Memory orchestration     │
+                       └─────────┬──────────────────┘
+                                │
+                                │ REST/WebSocket
+                                ▼
+                    ┌───────────────────────┐
+                    │    FastAPI (Python)   │◄─────────┐
+                    │  • OpenAI integration │          │
+                    │  • Memory operations  │          │
+                    │  • Token management   │          │
+                    └────────▲─────┬────────┘          │
+                             │     │                   │
+                             │     │                   │
+                             │     │                   │
+                    SQL/Vector│     ▼            OpenAI Calls
+                             │  ┌──────────────┐       │
+                             │  │    mem0     │       │
+                             │  │ • memory ops│       │
+                             │  └──────┬──────┘       │
+                             │         │              │
+                             ▼         ▼              ▼
+                     Supabase Postgres    ┌────────────────┐
+                     (+pgvector)          │    OpenAI      │
+                     • users / auth       │  • Chat GPT-4  │
+                     • messages           │  • Embeddings  │
+                     • persona_scores     └────────────────┘
+                     • conversations
                      • goals & progress
                      • journal_entries
-                     • future test_questions & results
+                     • test_questions
 ```
+
+### Architecture Components
+
+1. **AI-Orchestra (TypeScript)**
+   - Central coordinator for all system operations
+   - Manages state machines for all agents (Core-Therapist, Safety-Sentinel, Session-Summary)
+   - Controls conversation flow and agent transitions
+   - Orchestrates calls to FastAPI for AI and memory operations
+   - Maintains conversation context and agent states
+   - Makes decisions about when to call which service
+   - Handles WebSocket connections with frontend
+
+2. **FastAPI Service (Python)**
+   - Executes AI operations through OpenAI
+   - Implements memory operations via mem0
+   - Handles token management and rate limiting
+   - Processes embeddings and vector operations
+   - Provides RESTful and WebSocket endpoints for AI-Orchestra
+   - Manages API keys and security
+
+3. **Next.js Frontend**
+   - Implements real-time chat UI
+   - Manages WebSocket connection to AI-Orchestra
+   - Handles user authentication
+   - Provides responsive interface
+
+### Communication Protocols
+
+1. **Server-Sent Events (SSE)**
+   - Primary protocol for AI response streaming
+   - Efficient handling of OpenAI token stream
+   - One-way communication optimized for text delivery
+   - Lower overhead compared to WebSocket for streaming
+   - Automatic reconnection and HTTP/2 support
+
+2. **WebSocket**
+   - Used for real-time agent orchestration
+   - Bi-directional communication for state management
+   - Low-latency agent coordination
+   - Status updates and control signals
+   - Connection management with heartbeat
+
+3. **Hybrid Approach Benefits**
+   - Optimized resource usage
+   - Clear separation of concerns
+   - Better error handling and recovery
+   - Proven pattern in production systems
+   - Scalable architecture
+
+### Key Architecture Decisions
+
+1. **AI-Orchestra as Central Coordinator**
+   - Acts as the "brain" of the system
+   - Makes decisions about agent transitions
+   - Coordinates all service calls
+   - Maintains system state and conversation flow
+   - Delegates heavy lifting to specialized services
+
+2. **Python for AI Operations**
+   - Leverages OpenAI's official Python SDK
+   - Better memory management capabilities
+   - Superior token handling and embeddings
+   - Robust ML/AI ecosystem support
+   - Enhanced security for API keys
+
+3. **Communication Flow**
+   - Frontend ←→ AI-Orchestra: WebSocket for real-time chat
+   - AI-Orchestra ←→ FastAPI: REST/WebSocket for AI operations
+   - FastAPI ←→ OpenAI: SDK calls for AI operations
+   - FastAPI ←→ mem0: Direct integration for memory operations
+
+4. **Hybrid Language Approach**
+   - TypeScript (AI-Orchestra): Coordination and state management
+   - Python (FastAPI): AI and memory operations
+   - Next.js: Modern UI development
+   - Clear separation of concerns
 
 ## Tech Stack
 
