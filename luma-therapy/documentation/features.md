@@ -53,6 +53,17 @@
 - All flows (signup, password setup/change, profile access) tested and confirmed working as of latest update
 - Backend now loads environment variables from the project root `.env` file (above `luma-therapy/`).
 
+**Security Improvements (July 2025)**:
+- Implemented strict CORS policy with configurable origins
+- Added rate limiting for all authentication endpoints
+- Enhanced password security with proper verification
+- Implemented CSP headers and security monitoring
+- Fixed signout flow issues with proper cookie handling
+- Added comprehensive security logging and monitoring
+- Removed all hardcoded development URLs
+- Implemented proper SQL injection prevention
+- Enhanced error handling and user feedback
+
 ### Testing Strategy
 - Test OAuth flows with Google and GitHub
 - Verify email magic link authentication (both PKCE and hash-based)
@@ -63,6 +74,17 @@
 - Test sign-out and ensure session/cookies are cleared
 - Test password setup/change and verify logging
 - Test RLS policies to ensure users can only access their own profile
+
+**Security Testing**:
+- Verify CORS policy blocks unauthorized origins
+- Test rate limiting functionality
+- Validate SQL injection prevention
+- Check CSP header implementation
+- Verify secure cookie handling
+- Test comprehensive logging system
+- Validate authentication flow security
+- Check password change security
+- Test signout flow reliability
 
 ### Next Steps
 - Monitor for edge-case auth/profile issues

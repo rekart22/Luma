@@ -103,3 +103,72 @@ luma-therapy/
 ## Known Issues (update)
 - All password change flows are now secure and require current password verification.
 - No known issues with password setup/change as of this update. 
+
+## Security Improvements (July 2025)
+
+### Critical Security Fixes
+1. **CORS Configuration**
+   - Removed wildcard (*) CORS configuration
+   - Implemented strict origin checking
+   - Added environment variable `ALLOWED_ORIGINS` for configurable origins
+   - Separate CORS policies for development and production
+
+2. **Debug Logging**
+   - Implemented structured logging with Winston (TypeScript) and Loguru (Python)
+   - Removed sensitive information from logs
+   - Added log redaction for PII and sensitive data
+   - Implemented proper log levels (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+
+3. **Authentication URLs**
+   - Removed hardcoded localhost URLs
+   - Implemented dynamic URL configuration based on environment
+   - Added environment variables for auth endpoints
+   - Proper URL handling in development and production
+
+### High Priority Security Fixes
+1. **Rate Limiting**
+   - Implemented rate limiting for all authentication endpoints
+   - Added exponential backoff for failed attempts
+   - Configured per-IP and per-user rate limits
+   - Added monitoring for rate limit violations
+
+2. **SQL Injection Prevention**
+   - Implemented parameterized queries in all database functions
+   - Added input validation and sanitization
+   - Updated database migrations to use proper parameter binding
+   - Regular security scanning for SQL injection vulnerabilities
+
+3. **Password Security**
+   - Enhanced password storage with proper hashing
+   - Implemented secure password change verification
+   - Added comprehensive password change auditing
+   - Enforced strong password policies
+
+4. **Content Security Policy**
+   - Added CSP headers
+   - Configured strict CSP rules
+   - Implemented nonce-based CSP for inline scripts
+   - Regular CSP reporting and monitoring
+
+## Common Issues and Solutions
+
+### Signout Flow Issues
+**Problem**: Next.js cookie handling during signout causing "nextCookies.get is not a function" error
+
+**Solution**:
+1. Implemented proper async/await handling for cookie operations
+2. Added systematic cookie cleanup:
+   ```typescript
+   // Clear all Supabase-related cookies
+   cookies.delete('sb-access-token')
+   cookies.delete('sb-refresh-token')
+   // Additional cookie cleanup...
+   ```
+3. Enhanced error handling and logging during signout
+4. Added proper redirection after successful signout
+
+**Key Learnings**:
+- Cookie operations in Next.js route handlers must be handled asynchronously
+- All auth-related cookies must be systematically cleared
+- Proper error handling is crucial for auth operations
+- Logging helps track auth flow issues 

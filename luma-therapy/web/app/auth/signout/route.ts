@@ -1,68 +1,53 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
+import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { logger, generateTraceId } from '@/lib/utils'
 
+export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-// Constants for consistent URL use
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3004';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3004'
 
 export async function POST(request: Request) {
   const traceId = generateTraceId();
-  logger.debug(`[SIGNOUT] Starting signout process`, { traceId });
-
+  logger.debug(`[SIGNOUT-ALT] Starting alternative signout process`, { traceId });
+  
   try {
-    // Get cookie store and await it
-    const cookieStore = await cookies();
-    logger.debug(`[SIGNOUT] Cookie store initialized`, { traceId });
-
-    // List all cookies before clearing
-    const allCookies = await cookieStore.getAll();
-    logger.debug(`[SIGNOUT] Current cookies:`, { 
-      cookieNames: allCookies.map(c => c.name),
-      traceId 
-    });
-
-    const supabase = createRouteHandlerClient({ 
-      cookies: async () => await cookies()
-    });
+    // Use the regular Supabase client instead of the Next.js specific one
+    const supabase = createClient(supabaseUrl, supabaseAnonKey)
     
-    // Sign out from Supabase
-    const { error: signOutError } = await supabase.auth.signOut();
-    if (signOutError) {
-      throw signOutError;
-    }
-    logger.debug(`[SIGNOUT] Supabase signOut completed`, { traceId });
-
-    // Create response with redirect
+    // Try to read the sb-auth-token cookie from the request
+    const cookieHeader = request.headers.get('cookie') || '';
+    logger.debug(`[SIGNOUT-ALT] Cookie header: ${cookieHeader}`, { traceId });
+    
+    // Sign out - will only affect server-side state
+    await supabase.auth.signOut();
+    logger.debug(`[SIGNOUT-ALT] Server-side signout completed`, { traceId });
+    
+    // Create response that will clear cookies
     const response = NextResponse.redirect(new URL('/auth/signin', BASE_URL), {
-      status: 307,
+      status: 303,
     });
-
-    // Clear all Supabase-related cookies
-    const supabaseCookies = allCookies.filter(cookie => 
-      cookie.name.startsWith('sb-')
-    );
-
-    for (const cookie of supabaseCookies) {
-      logger.debug(`[SIGNOUT] Clearing cookie: ${cookie.name}`, { traceId });
-      response.cookies.set(cookie.name, '', { 
-        maxAge: 0,
+    
+    // Manually clear any Supabase cookies
+    const sbCookies = ['sb-access-token', 'sb-refresh-token', 'sb-auth-token'];
+    for (const name of sbCookies) {
+      response.cookies.set({
+        name,
+        value: '',
         path: '/',
+        maxAge: 0,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax'
+        sameSite: 'lax',
       });
+      logger.debug(`[SIGNOUT-ALT] Cleared cookie: ${name}`, { traceId });
     }
     
-    logger.debug(`[SIGNOUT] All cookies cleared, redirecting`, { traceId });
+    logger.debug(`[SIGNOUT-ALT] Redirect response prepared`, { traceId });
     return response;
-
   } catch (error) {
-    logger.error('[SIGNOUT] Error during signout:', { error, traceId });
-    return NextResponse.json(
-      { error: 'Internal Server Error' },
-      { status: 500 }
-    );
+    logger.error(`[SIGNOUT-ALT] Error: ${error}`, { traceId });
+    return NextResponse.redirect(new URL('/auth/signin', BASE_URL), { status: 303 });
   }
 } 
