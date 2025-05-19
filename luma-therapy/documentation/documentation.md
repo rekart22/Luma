@@ -3,24 +3,30 @@
 ## Project Structure
 
 ```
-luma-therapy/
-├── web/                   # Next.js frontend (UI files migrated here)
-│   ├── app/
-│   ├── components/
-│   ├── hooks/
-│   ├── lib/
-│   ├── public/
-│   └── ...config and package files
-├── ai-orchestra/          # TypeScript agent system
-│   ├── agents/
-│   └── states/
-├── api/                   # FastAPI service
-│   ├── routers/
-│   └── services/
-└── db/                    # Database migrations
-    └── supabase/
-    └── documentation/     # Project documentation
+luma-therapy/                # Root project directory
+├── node_modules/           # Project-wide Node.js dependencies
+├── web/                    # Next.js frontend (UI files migrated here)
+│   ├── app/               # Next.js app directory
+│   ├── components/        # React components
+│   ├── hooks/             # Custom React hooks
+│   ├── lib/               # Utility functions
+│   ├── public/            # Static assets
+│   └── package.json       # Web-specific dependencies
+├── ai-orchestra/           # TypeScript agent system
+│   ├── agents/            # Agent definitions
+│   └── states/            # State machine logic
+├── api/                    # FastAPI service
+│   ├── routers/           # API endpoints
+│   └── services/          # Business logic
+├── db/                     # Database migrations
+│   └── supabase/          # Supabase schema definitions
+├── documentation/          # Project documentation
+├── .env                    # Environment variables
+├── .gitignore             # Git ignore rules
+├── package.json           # Root project dependencies
+└── package-lock.json      # Dependency lock file
 ```
+
 
 ## Migration & Setup Steps
 

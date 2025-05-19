@@ -1,6 +1,33 @@
 # Luma Therapy Chat - Enhanced Project Blueprint
 
 ## Overview
+\n## Project Structure
+
+```
+luma-therapy/                # Root project directory
+├── node_modules/           # Project-wide Node.js dependencies
+├── web/                    # Next.js frontend (UI files migrated here)
+│   ├── app/               # Next.js app directory
+│   ├── components/        # React components
+│   ├── hooks/             # Custom React hooks
+│   ├── lib/               # Utility functions
+│   ├── public/            # Static assets
+│   └── package.json       # Web-specific dependencies
+├── ai-orchestra/           # TypeScript agent system
+│   ├── agents/            # Agent definitions
+│   └── states/            # State machine logic
+├── api/                    # FastAPI service
+│   ├── routers/           # API endpoints
+│   └── services/          # Business logic
+├── db/                     # Database migrations
+│   └── supabase/          # Supabase schema definitions
+├── documentation/          # Project documentation
+├── .env                    # Environment variables
+├── .gitignore             # Git ignore rules
+├── package.json           # Root project dependencies
+└── package-lock.json      # Dependency lock file
+```
+
 Luma is a supportive chat application designed to provide meaningful conversations through a multi-agent AI system. The MVP will focus on text-based interaction, with voice capabilities reserved for future iterations. The system features enhanced memory management through mem0 integration for improved personalization and contextual understanding. Luma is positioned as a companion for personal development, not just a therapeutic tool.
 
 ## System Architecture
