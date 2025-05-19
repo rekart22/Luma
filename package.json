@@ -1,7 +1,18 @@
 {
+  "name": "luma-workspace",
+  "private": true,
+  "workspaces": [
+    "luma-therapy/web",
+    "luma-therapy/ai-orchestra"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev --workspace=luma-therapy/web",
+    "dev:ai-orchestra": "npm run dev --workspace=luma-therapy/ai-orchestra",
+    "build:web": "npm run build --workspace=luma-therapy/web",
+    "build:ai-orchestra": "npm run build --workspace=luma-therapy/ai-orchestra"
+  },
   "dependencies": {
     "@supabase/auth-helpers-nextjs": "^0.10.0",
-    "uuid": "^11.1.0",
-    "winston": "^3.17.0"
+    "@supabase/supabase-js": "^2.49.4"
   }
 }

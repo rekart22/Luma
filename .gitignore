@@ -1,0 +1,66 @@
+# Environment
+.env
+.env*.local
+.envrc
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Node.js
+node_modules/
+.npm
+dist/
+dist-ssr/
+*.pem
+# Next.js
+.next/
+out/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+ENV/
+pip-wheel-metadata/
+.ipynb_checkpoints
+ipython_config.py
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Cursor
+.cursor-cache/
+
+# Build outputs (general)
+build/
+
+# Large files as per .cursorignore, though .gitignore usually handles source code
+# *.csv
+# *.json # Be careful with this, package.json, tsconfig.json etc. are needed
+# *.lock # package-lock.json, yarn.lock, pnpm-lock.yaml should be committed
+
+# Generated files as per .cursorignore
+# *.generated.ts
+# *.generated.tsx
+
+# Supabase
+.supabase/
+
+# Test & Coverage
+coverage/

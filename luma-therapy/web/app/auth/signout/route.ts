@@ -6,22 +6,63 @@ import { logger, generateTraceId } from '@/lib/utils'
 export const dynamic = 'force-dynamic'
 
 // Constants for consistent URL use
-const BASE_URL = 'http://localhost:3004';
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3004';
 
-export async function POST() {
+export async function POST(request: Request) {
   const traceId = generateTraceId();
-  logger.debug(`[SIGNOUT] Server-side signout route called`, { traceId });
+  logger.debug(`[SIGNOUT] Starting signout process`, { traceId });
 
-  const cookieStore = cookies();
-  const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
-  // Sign out the user
-  await supabase.auth.signOut()
+  try {
+    // Get cookie store and await it
+    const cookieStore = await cookies();
+    logger.debug(`[SIGNOUT] Cookie store initialized`, { traceId });
 
-  // Explicitly clear the Supabase auth cookie (for Edge runtime)
-  const response = NextResponse.redirect(new URL('/', BASE_URL))
-  response.cookies.set({ name: 'sb-access-token', value: '', path: '/', maxAge: 0 })
-  response.cookies.set({ name: 'sb-refresh-token', value: '', path: '/', maxAge: 0 })
-  logger.debug(`[SIGNOUT] Cleared sb-access-token and sb-refresh-token cookies`, { traceId });
+    // List all cookies before clearing
+    const allCookies = await cookieStore.getAll();
+    logger.debug(`[SIGNOUT] Current cookies:`, { 
+      cookieNames: allCookies.map(c => c.name),
+      traceId 
+    });
 
-  return response
+    const supabase = createRouteHandlerClient({ 
+      cookies: async () => await cookies()
+    });
+    
+    // Sign out from Supabase
+    const { error: signOutError } = await supabase.auth.signOut();
+    if (signOutError) {
+      throw signOutError;
+    }
+    logger.debug(`[SIGNOUT] Supabase signOut completed`, { traceId });
+
+    // Create response with redirect
+    const response = NextResponse.redirect(new URL('/auth/signin', BASE_URL), {
+      status: 307,
+    });
+
+    // Clear all Supabase-related cookies
+    const supabaseCookies = allCookies.filter(cookie => 
+      cookie.name.startsWith('sb-')
+    );
+
+    for (const cookie of supabaseCookies) {
+      logger.debug(`[SIGNOUT] Clearing cookie: ${cookie.name}`, { traceId });
+      response.cookies.set(cookie.name, '', { 
+        maxAge: 0,
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
+      });
+    }
+    
+    logger.debug(`[SIGNOUT] All cookies cleared, redirecting`, { traceId });
+    return response;
+
+  } catch (error) {
+    logger.error('[SIGNOUT] Error during signout:', { error, traceId });
+    return NextResponse.json(
+      { error: 'Internal Server Error' },
+      { status: 500 }
+    );
+  }
 } 

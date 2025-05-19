@@ -1,0 +1,16 @@
+# Build outputs
+.next/
+out/
+build/
+dist/
+
+# Large files
+*.csv
+*.lock
+
+# Third-party code
+node_modules/
+
+# Generated files
+*.generated.ts
+*.generated.tsx 

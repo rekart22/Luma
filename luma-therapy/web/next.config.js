@@ -36,9 +36,10 @@ const nextConfig = {
   experimental: {
     // Reduce file system operations
     optimizeCss: false,
-    // Use polling instead of filesystem events (more stable on Windows)
-    staticPageGenerationTimeout: 120,
+    // The staticPageGenerationTimeout has been moved to the main config
   },
+  // Moving staticPageGenerationTimeout here (out of experimental)
+  staticPageGenerationTimeout: 120,
 };
 
 module.exports = nextConfig;
