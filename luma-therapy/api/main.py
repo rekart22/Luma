@@ -9,11 +9,23 @@ from dotenv import load_dotenv
 
 # Load environment variables from .env file in the parent directory of luma-therapy
 DOTENV_PATH = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), '.env'))
-load_dotenv(dotenv_path=DOTENV_PATH)
+
+# Debug prints for .env loading
+logger.debug(f"Current working directory: {os.getcwd()}")
+logger.debug(f"Looking for .env file at: {DOTENV_PATH}")
+logger.debug(f"Does .env file exist? {os.path.exists(DOTENV_PATH)}")
+
+# Try to load .env and log the result
+load_dotenv_success = load_dotenv(dotenv_path=DOTENV_PATH)
+logger.debug(f"Was .env file loaded successfully? {load_dotenv_success}")
 
 # Map .env variable SUPABASE_API_KEY to SUPABASE_SERVICE_ROLE_KEY for code clarity
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or os.environ.get("SUPABASE_API_KEY")
+
+# Debug prints for environment variables
+logger.debug(f"SUPABASE_URL loaded as: {'[SET]' if SUPABASE_URL else '[NOT SET]'}")
+logger.debug(f"SUPABASE_SERVICE_ROLE_KEY loaded as: {'[SET]' if SUPABASE_SERVICE_ROLE_KEY else '[NOT SET]'}")
 
 app = FastAPI()
 
@@ -71,6 +83,11 @@ async def change_password(req: PasswordChangeRequest):
 @app.post("/auth/change-password-audit")
 async def change_password_audit(req: PasswordAuditLogRequest):
     logger.info(f"Received password audit log event", req.dict())
+    
+    # Debug: verify environment variables during request
+    logger.debug(f"During request - SUPABASE_URL: {'[SET]' if SUPABASE_URL else '[NOT SET]'}")
+    logger.debug(f"During request - SUPABASE_SERVICE_ROLE_KEY: {'[SET]' if SUPABASE_SERVICE_ROLE_KEY else '[NOT SET]'}")
+    
     audit_payload = {
         "user_id": req.user_id,
         "event_type": req.event_type,
@@ -83,8 +100,13 @@ async def change_password_audit(req: PasswordAuditLogRequest):
         "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}",
         "Content-Type": "application/json"
     }
+    
+    # Debug: log the actual URL being constructed
+    full_url = f"{SUPABASE_URL}/rest/v1/auth_audit_log"
+    logger.debug(f"Attempting to call Supabase URL: {full_url}")
+    
     resp = requests.post(
-        f"{SUPABASE_URL}/rest/v1/auth_audit_log",
+        full_url,
         json=audit_payload,
         headers=headers
     )
