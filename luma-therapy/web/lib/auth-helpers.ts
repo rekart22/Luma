@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { Database } from "@/lib/database.types";
 import { createClient } from "@/lib/supabase/server";
+import logger, { generateTraceId } from "@/lib/logger";
 
 interface AuthError {
   message: string;
@@ -10,26 +11,35 @@ interface AuthError {
  * Helper function to get the authenticated user's session from a request
  * Updated for Next.js 15's async cookies API
  */
-export async function getAuthenticatedSession() {
+export async function getAuthenticatedSession(traceId: string = generateTraceId()) {
   try {
-    console.log("Auth helper: Starting session retrieval with async cookie handling");
+    logger.info("Starting session retrieval", { traceId });
     
     // Create a new Supabase client using our server utility
-    const supabase = createClient();
+    const supabase = await createClient({ traceId });
+    logger.debug("Supabase client created", { traceId });
 
-    console.log("Auth helper: Client created, retrieving session");
     const { data: { session }, error } = await supabase.auth.getSession();
-
+    
     if (error) {
-      console.error("Auth error:", error.message);
+      logger.error("Authentication error", { traceId, error: error.message });
       return { data: { session: null }, error: error as AuthError };
     }
 
-    console.log("Auth helper: Session retrieved successfully");
+    if (!session) {
+      logger.info("No active session found", { traceId });
+    } else {
+      logger.info("Session retrieved successfully", { traceId, userId: session.user.id });
+    }
+
     return { data: { session }, error: null };
   } catch (e) {
     const error = e as Error;
-    console.error("Auth helper error:", error.message, error.stack);
+    logger.error("Auth helper error", { 
+      traceId,
+      error: error.message,
+      stack: error.stack
+    });
     return { data: { session: null }, error: { message: error.message } };
   }
 }
@@ -38,16 +48,25 @@ export async function getAuthenticatedSession() {
  * Get the user ID from the request if authenticated
  * Returns null if not authenticated
  */
-export async function getAuthenticatedUserId(): Promise<string | null> {
+export async function getAuthenticatedUserId(traceId: string = generateTraceId()): Promise<string | null> {
   try {
-    const { data: { session }, error } = await getAuthenticatedSession();
+    logger.debug("Attempting to get authenticated user ID", { traceId });
+    const { data: { session }, error } = await getAuthenticatedSession(traceId);
+    
     if (error || !session) {
+      logger.info("No authenticated user found", { traceId, error: error?.message });
       return null;
     }
-    return session?.user?.id || null;
+    
+    logger.debug("Successfully retrieved user ID", { traceId, userId: session.user.id });
+    return session.user.id;
   } catch (e) {
     const error = e as Error;
-    console.error("User ID fetch error:", error.message);
+    logger.error("User ID fetch error", { 
+      traceId,
+      error: error.message,
+      stack: error.stack
+    });
     return null;
   }
 } 

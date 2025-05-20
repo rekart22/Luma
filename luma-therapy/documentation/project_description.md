@@ -160,15 +160,34 @@ Luma is a supportive chat application designed to provide meaningful conversatio
 
 | Layer | Tech | Rationale |
 |-------|------|-----------|
-| Frontend | Next.js 15 on Vercel Edge | Instant global deployments, built-in streaming capability |
+| Frontend | Next.js 15 on Vercel Edge | Instant global deployments, built-in streaming capability, Edge Runtime compatibility |
+| Logging | Edge-compatible Logger | Lightweight, structured logging for Edge Functions without Node.js dependencies |
 | Agent orchestration | AI-Orchestra (TypeScript) | Lightweight FSM for streamText, simpler than LangGraph for our 3-agent system |
 | Database | Supabase (Postgres + pgvector) | SQL for structured traits, vector search for chat memory |
 | Memory Management | mem0 | Hierarchical memory organization, improved context awareness, memory operations |
-| Auth | Supabase OAuth (Google, GitHub) | Secure, SSR-ready, SOC 2 compliant |
+| Auth | Supabase OAuth (Google, GitHub) | Secure, SSR-ready, Edge-compatible, SOC 2 compliant |
 | Back-end API | FastAPI service | Python ecosystem for embeddings & ML tooling |
 | LLM | OpenAI GPT-4o | Low-latency responses; prompt-prefix caching to lower costs |
 | IDE & UI scaffolding | Macaly vibe-code template | Reuse existing React codebase with style customizations |
 | DevTool | Cursor AI editor | Rapid code generation & inline refactors for each milestone |
+
+### Edge Runtime Considerations (Added 20 May 2025)
+
+1. **Logging Strategy**
+   - Custom Edge-compatible logger implementation
+   - No dependency on Node.js-specific modules
+   - Structured JSON logging with metadata
+   - Trace ID support for request tracking
+
+2. **Cookie Handling**
+   - Async cookie operations for Edge compatibility
+   - Proper error handling and fallbacks
+   - Session management optimized for Edge
+
+3. **Dependencies**
+   - Careful selection of Edge-compatible packages
+   - Removal of Node.js-specific dependencies
+   - Lightweight alternatives for common utilities
 
 ## Enhanced MVP Feature Roadmap
 

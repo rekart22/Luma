@@ -9,7 +9,7 @@ npx @agentdeskai/browser-tools-server
 
 
 
-cd luma-therapy/web
+cd luma-therapy/web --or cd web
 npm run dev -- --port 3004
 
 

@@ -338,11 +338,11 @@ The system implements a hybrid approach using both Server-Sent Events (SSE) and 
    - Memory operation optimization
    - State synchronization at scale 
 
-## Cookie Management & Auth Updates (19 May 2025)
+## Cookie Management & Auth Updates (20 May 2025)
 
 ### Recent Improvements
 1. **Cookie Handling Architecture**
-   - Implemented proper async cookie handling for Next.js 15
+   - Implemented Edge-compatible cookie handling for Next.js 15
    - Created dedicated Supabase client utilities:
      ```typescript
      /web/lib/supabase/server.ts    // Server-side client
@@ -352,22 +352,67 @@ The system implements a hybrid approach using both Server-Sent Events (SSE) and 
    - Simplified cookie management using createRouteHandlerClient
    - Enhanced error logging and tracing
 
-2. **Authentication Flow**
+2. **Edge Runtime Compatibility**
+   - Replaced Winston logger with Edge-compatible custom logger
+   - Implemented lightweight logging solution for Edge Functions
+   - Removed Node.js-specific dependencies (os, fs modules)
+   - Structured logging with trace IDs and metadata support
+
+3. **Authentication Flow**
    - Streamlined auth middleware implementation
    - Improved session refresh handling
    - Better error propagation and logging
    - Protected route handling with proper redirects
 
-3. **Known Issues**
-   - Cookie warning in /api/chat/stream route:
-     ```
-     Error: Route "/api/chat/stream" used cookies().get(...). 
-     cookies() should be awaited before using its value.
-     ```
-   - This warning appears but doesn't affect functionality
-   - Chat streaming works despite the warning
+4. **Resolved Issues**
+   - Fixed cookie warning in /api/chat/stream route by:
+     - Implementing async cookie handling
+     - Using Edge-compatible logging
+     - Removing Node.js-specific dependencies
+   - Chat streaming now works without warnings
+   - Proper error handling in place
 
-### Next Steps
+### Best Practices for Edge Runtime
+1. **Cookie Operations**
+   ```typescript
+   // Always use async cookie handling
+   const cookieStore = await cookies();
+   const supabase = createRouteHandlerClient({ 
+     cookies: () => cookieStore 
+   });
+   ```
+
+2. **Logging Strategy**
+   ```typescript
+   // Edge-compatible logger
+   class EdgeLogger {
+     static log(level: string, message: string, metadata = {}) {
+       const entry = {
+         timestamp: new Date().toISOString(),
+         level,
+         message,
+         ...metadata
+       };
+       console.log(JSON.stringify(entry));
+     }
+   }
+   ```
+
+3. **Error Handling**
+   ```typescript
+   try {
+     const cookieStore = await cookies();
+     // ... cookie operations
+   } catch (error) {
+     EdgeLogger.log('error', 'Cookie operation failed', {
+       error: error.message,
+       traceId: generateTraceId()
+     });
+     // Handle error appropriately
+   }
+   ```
+
+## Next Steps
 1. **High Priority**
    - Resolve async cookie warning in chat stream route
    - Implement proper cookie awaiting in stream handler
