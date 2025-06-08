@@ -34,6 +34,26 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# Welcome endpoint
+@app.get("/")
+async def root():
+    return {
+        "message": "Welcome to Luma Therapy API",
+        "version": "1.0.0",
+        "endpoints": {
+            "docs": "/docs",
+            "redoc": "/redoc",
+            "chat": {
+                "completion": "/chat/completion",
+                "stream": "/chat/stream"
+            },
+            "auth": {
+                "change_password": "/auth/change-password",
+                "change_password_audit": "/auth/change-password-audit"
+            }
+        }
+    }
+
 # Allow CORS for local dev and production
 # TODO: Replace "https://your-production-domain.com" with your actual production domain
 ALLOWED_ORIGINS = [

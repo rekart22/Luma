@@ -4,4 +4,6 @@ pydantic
 openai
 pgvector
 supabase
-loguru 
+loguru
+requests
+python-dotenv 

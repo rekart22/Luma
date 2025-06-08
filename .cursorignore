@@ -1,15 +1,43 @@
+# Python virtual environment
+.venv/
+venv/
+ENV/
+
 # Build outputs
-.next/
-out/
-build/
 dist/
+build/
+*.egg-info/
+
+# Cache directories
+__pycache__/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Node modules
+node_modules/
+
+# Environment files
+.env
+.env.*
+
+# IDE specific
+.idea/
+.vscode/
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Large binary files
+*.pkl
+*.h5
+*.model
+*.bin
 
 # Large files
 *.csv
 *.lock
-
-# Third-party code
-node_modules/
 
 # Generated files
 *.generated.ts
